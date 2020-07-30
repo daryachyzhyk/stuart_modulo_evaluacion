@@ -1,13 +1,13 @@
 '''
 Script to create the table of the real data last week:
 * stock
-* buing
+* compra
 * sent
 * returns
 *
 
 The scrip take the date for analyze as a previous Monday to the day of run the code
-The format of output table (columns): date_week	family_desc	clima	size	info_type	q
+The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size', 'info_type', 'q'
 
 '''
 
@@ -125,7 +125,7 @@ df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
 
 ################################################################################################################
 # load Compra
-def get_compra_real(date_start_str, date_end, stock_path, how='monday'):
+def get_compra_real(date_start_str):
     # TODO: download compra file from Google Drive
 
     # compra realizada
@@ -141,84 +141,51 @@ def get_compra_real(date_start_str, date_end, stock_path, how='monday'):
 
         query_compra_reference_text = 'date_compra == @date_compra_str'
         df_compra_raw = pd.read_csv(compra_file,
-                                    usecols=['date_compra', 'reference', 'family_desc', 'size', 'cantidad_pedida']
+                                    usecols=['date_compra', 'reference', 'cantidad_pedida']
                                     ).query(query_compra_reference_text)
 
-        
-        # df_compra_raw1 = pd.read_csv(compra_file, encoding="ISO-8859-1")
+        list_references_compra = df_compra_raw["reference"].to_list()
+        df_compra_products = get_fam_size_clima(list_references_compra, productos_file, drop_duplicates=True)
+
+        df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
+        df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
+
+        df_compra['info_type'] = 'compra'
+        df_compra = df_compra.rename(columns={'cantidad_pedida': 'q'})
+
     else:
         print('There is no date ' + date_start_str + '. Please update the data here: ' + compra_dates_file)
 
-# rename and clean the data of the real compra
+    return df_compra
 
-df_compra_actual = df_compra_actual_all[['Artículo', 'Artículo -> Grupo -> Temporada',
-                                         'Artículo -> Grupo -> Familia -> Nombre',
-                                         'Artículo -> Talla',
-                                         'Cantidad pedida',
-                                         'Cantidad Entregada',
-                                         'Cantidad pendiente',
-                                         'Ultima recepción -> Compra -> Fecha',
-                                         'Fecha prevista de entrega',
-                                         'Artículo -> Precio de Venta (con Iva)',
-                                         'Pedidos -> Pedido']]
+df_compra = get_compra_real(date_start_str)
 
-df_compra_actual = df_compra_actual.rename(columns={'Artículo': 'reference',
-                                                    'Artículo -> Grupo -> Temporada': 'temporada',
-                                                    'Artículo -> Grupo -> Familia -> Nombre': 'family_desc',
-                                                    'Artículo -> Talla': 'size',
-                                                    'Cantidad pedida': 'cantidad_pedida',
-                                                    'Cantidad Entregada': 'cantidad_entregada',
-                                                    'Cantidad pendiente': 'cantidad_pendiente',
-                                                    'Ultima recepción -> Compra -> Fecha': 'fecha_recepcion',
-                                                    'Fecha prevista de entrega': 'fecha_prevista_entrega',
-                                                    'Artículo -> Precio de Venta (con Iva)': 'precio_venta_coniva',
-                                                    'Pedidos -> Pedido': 'numero_pedido'})
-
-df_compra_actual.loc[df_compra_actual['family_desc'] == 'DENIM JEANS', 'family_desc'] = 'DENIM'
-
-# TODO : añadir clima
-
-# info de cada prenda
-list_reference_compra = df_compra_actual["reference"].to_list()
-query_product_text = 'reference in @list_reference_compra'
-
-
-df_productos_compra = pd.read_csv(productos_file,
-                           usecols=['reference', 'clima'] # , 'clima_grupo'
-                           ).query(query_product_text)
+#################################################################3
+# Pendientes
 
 
 
-df_compra_actual_ftc = pd.merge(df_compra_actual,
-                                df_productos_compra,
-                                on=['reference'],
-                                how='left')
-
-df_compra_actual_ft = df_compra_actual_ftc.groupby(['family_desc', 'size']).agg({'cantidad_pedida': 'sum',
-                                                                                 # 'cantidad_entregada': 'sum',
-                                                                                 # 'cantidad_pendiente': 'sum'
-                                                                                 }).reset_index()
-df_compra_actual_fc = df_compra_actual_ftc.groupby(['family_desc', 'clima']).agg({'cantidad_pedida': 'sum'}).reset_index()
 
 
-df_compra_actual_familia_talla = df_compra_actual_ft[df_compra_actual_ft['family_desc'].isin(familias_interes)]
+# campos fichero PENDIENTES.txt
+# "reference","pendiente","date","family","family_desc","color","temporada","size","brand","precio_compra","precio_compra_iva","precio_compra_libras","precio_compra_libras_iva","NA"
+# date es fecha prevista de recibir
+# campos fichero PEDIDOS_RECIBIDOS.txt
+# "date","reference","pedidos","family","family_desc","date2","brand","precio_compra","precio_compra_iva","precio_compra_libras","precio_compra_libras_iva","NA"
+# date es fecha de recepción
 
-df_compra_actual_familia_clima = df_compra_actual_fc[df_compra_actual_fc['family_desc'].isin(familias_interes)]
+# datetime.
+
+# pendientes_file = ('/var/lib/lookiero/stock/stock_tool/stuart2/20200702/pedidos.csv.gz')
+
+pendientes_folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
 
 
-# talla
-df_stuart_compra_actual_ft = pd.merge(df_stuart_familia_talla[['family_desc', 'size', 'size_ord', 'recomendacion']],
-                                      df_compra_actual_familia_talla,
-                                      on=['family_desc', 'size'],
-                                      how='left')
 
-df_stuart_compra_actual_ft['cantidad_pedida'] = df_stuart_compra_actual_ft['cantidad_pedida'].fillna(0)
+fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
 
-df_stuart_compra_actual_ft_plot = df_stuart_compra_actual_ft.melt(id_vars=['family_desc', 'size', 'size_ord'],
-                                                                  value_vars=['recomendacion', 'cantidad_pedida'],
-                                                                  var_name='stuart_compra', value_name='cantidad')
-
-# clima
+# date_datetime = fecha_stock_actual_start
+# date_str = pendientes_fecha_start
 
 
 

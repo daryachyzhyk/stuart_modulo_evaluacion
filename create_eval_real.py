@@ -67,7 +67,7 @@ path_save = ('/home/darya/Documents/Reports/2020-07-17-kpi-roturas-particular-ca
 
 #########################################################
 ########################################
-# stock actual
+# stock real
 def get_stock_real(date_start, date_end, stock_path, how='monday'):
     # how='week_mean'
     df_stock_all = pd.DataFrame([])
@@ -158,25 +158,126 @@ def get_compra_real(date_start_str):
 
     return df_compra
 
-df_compra = get_compra_real(date_start_str)
+# df_compra = get_compra_real(date_start_str)
+
+df_real = pd.DataFrame([])
+try:
+    print('Getting stock real for the dates: ' + date_start + ' - ' + date_end)
+    df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
+    df_real.append(df_stock)
+except:
+    print('Error in getting rel stock')
+    pass
+
+try:
+    print('Getting compra real')
+    df_stock = get_compra_real(date_start_str)
+    df_real.append(df_stock)
+except:
+    print('Error in getting real compra')
+    pass
+
 
 #################################################################3
 # Pendientes
 
 
+def get_pendientes_real():
+    pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
+    fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
 
+    # date_datetime = fecha_stock_actual_start
+    # date_str = pendientes_fecha_start
 
+    def load_pendientes(date_datetime):
+        '''
+        Load the PENDIENTES_XXX.txt from stock server based on the date in datetime format for the seasons not older then
+        previous to the actual season.
 
-# campos fichero PENDIENTES.txt
-# "reference","pendiente","date","family","family_desc","color","temporada","size","brand","precio_compra","precio_compra_iva","precio_compra_libras","precio_compra_libras_iva","NA"
-# date es fecha prevista de recibir
-# campos fichero PEDIDOS_RECIBIDOS.txt
-# "date","reference","pedidos","family","family_desc","date2","brand","precio_compra","precio_compra_iva","precio_compra_libras","precio_compra_libras_iva","NA"
-# date es fecha de recepción
+        :param date_datetime: datetime.datetime
+            The date of the day
+        :return: pandas.DataFrame
+        '''
 
-# datetime.
+        folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
+        date_str = date_datetime.strftime('%d%m%Y')
+        file = os.path.join(folder, 'PENDIENTES_' + date_str + '.txt')
+        # pendientes_anteriro_file = os.path.join(pendientes_folder, 'PENDIENTES_' + pendientes_fecha_anterior + '.txt')
 
-# pendientes_file = ('/var/lib/lookiero/stock/stock_tool/stuart2/20200702/pedidos.csv.gz')
+        df_raw = pd.read_csv(file, sep=";", header=None, error_bad_lines=False, encoding="ISO-8859-1")
+
+        df_raw = df_raw.drop(df_raw.columns[-1], axis=1)
+
+        df_raw.columns = ["reference", "pendiente", "date", "family", "family_desc", "color", "temporada", "size",
+                          "brand", "precio_compra", "precio_compra_iva", "precio_compra_libras",
+                          "precio_compra_libras_iva"]
+
+        df_raw['season'] = df_raw['reference'].str.extract('(^[0-9]+)')
+
+        df_raw['season'] = df_raw['season'].fillna('0')
+        df_raw['season'] = df_raw['season'].astype(int)
+
+        season_actual = get_current_season(date_datetime)
+        df = df_raw[df_raw['season'] >= season_actual - 1]
+
+        return df
+
+    df_pendientes_actual_all = load_pendientes(fecha_stock_actual_start)
+
+    df_pendientes_anterior_all = load_pendientes(fecha_pendientes_anterior)
+
+    # add info about climate
+    # list_reference_pendientes = df_stock_all["reference"].to_list()
+    # query_product_text = 'reference in @list_reference_stock'
+
+    df_productos_all_ref_cl = pd.read_csv(productos_file,
+                                          usecols=['reference', 'clima'])
+
+    df_pendientes_actual = pd.merge(df_pendientes_actual_all,
+                                    df_productos_all_ref_cl.drop_duplicates('reference', keep='last'),
+                                    on='reference',
+                                    how='left')
+
+    df_pendientes_anterior = pd.merge(df_pendientes_anterior_all,
+                                      df_productos_all_ref_cl.drop_duplicates('reference', keep='last'),
+                                      on='reference',
+                                      how='left')
+
+    df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_informado')
+    df_pendientes_anterior['clima'] = df_pendientes_anterior['clima'].fillna('no_informado')
+
+    # TODO: group and restar
+    df_pendientes_actual_ft = df_pendientes_actual.groupby(['family_desc', 'size']).agg(
+        {'pendiente': 'sum'}).reset_index()
+
+    df_pendientes_anterior_ft = df_pendientes_anterior.groupby(['family_desc', 'size']).agg(
+        {'pendiente': 'sum'}).reset_index()
+
+    df_pendientes_actual_ft = df_pendientes_actual_ft.rename(columns={'pendiente': 'pendiente_actual'})
+
+    df_pendientes_anterior_ft = df_pendientes_anterior_ft.rename(columns={'pendiente': 'pendiente_anterior'})
+
+    df_pendientes_ft = pd.merge(df_pendientes_actual_ft,
+                                df_pendientes_anterior_ft,
+                                on=['family_desc', 'size'])
+
+    df_pendientes_ft['pendiente_real'] = np.abs(
+        df_pendientes_ft['pendiente_anterior'] - df_pendientes_ft['pendiente_actual'])
+
+    df_pendientes_stuart_realidad_ft = pd.merge(df_pendientes_ft,
+                                                df_proyeccion_familia_talla[
+                                                    ['family_desc', 'size', 'pendientes', 'size_ord']],
+                                                on=['family_desc', 'size'])
+
+    df_pendientes_stuart_realidad_ft = df_pendientes_stuart_realidad_ft.rename(
+        columns={'pendientes': 'pendiente_proyeccion'})
+
+    df_pendientes_stuart_real_ft_merge = pd.melt(df_pendientes_stuart_realidad_ft,
+                                                 id_vars=['family_desc', 'size', 'size_ord'],
+                                                 value_vars=['pendiente_real', 'pendiente_proyeccion'],
+                                                 var_name='pendiente_type',
+                                                 value_name='pendiente'
+                                                 )
 
 pendientes_folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
 
@@ -291,3 +392,49 @@ def get_current_season(_date):
         _date = _date.date()
     _date = _date.replace(year=2000)
     return [season for season, (start, end) in seasons if start <= _date <= end][0]
+
+
+
+
+###########################################
+# Devos
+
+
+
+query_devos_text = 'date_terminated >= @fecha_stock_actual_start_str and date_terminated <= @fecha_stock_actual_end_str and purchased == 0'
+
+df_devos_real = pd.read_csv(venta_file,
+                           usecols=['reference', 'family_desc', 'size', 'date_ps_done', 'date_co',
+                                    'date_terminated', 'purchased']
+                           ).query(query_devos_text)
+
+# TODO: add reference climate
+
+df_devos_real_ft = df_devos_real.groupby(['family_desc', 'size']).agg({'reference': 'count'}).reset_index()
+df_devos_real_ft = df_devos_real_ft.rename(columns={'reference': 'devos_real'})
+
+df_devos_stuart_real_ft = pd.merge(df_devos_real_ft,
+                                            df_proyeccion_familia_talla[['family_desc', 'size', 'devos', 'size_ord']],
+                                            on=['family_desc', 'size'])
+
+df_devos_stuart_real_ft = df_devos_stuart_real_ft.rename(columns={'devos': 'devos_proyeccion'})
+
+df_devos_stuart_real_ft_melt = pd.melt(df_devos_stuart_real_ft,
+                                             id_vars=['family_desc', 'size', 'size_ord'],
+                                             value_vars=['devos_real', 'devos_proyeccion'],
+                                             var_name='devos_type',
+                                             value_name='devos')
+
+# df_devos_stuart_real_ft_melt = df_devos_stuart_real_ft_melt.sort_values(by=['family_desc', 'size_ord'])
+
+size_order = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'X4XL']
+
+plot_catplot_stuart_real(df_devos_stuart_real_ft_melt,
+                         x="size",
+                         y="devos",
+                         hue='devos_type',
+                         col="family_desc",
+                         col_wrap=4, title_name='Devos proyeccion vs real, familia - talla',
+                         path_results=path_results,
+                         file_name='plot_devos_stuart_real_familia_talla.png',
+                         order=size_order)

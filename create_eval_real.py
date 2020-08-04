@@ -25,10 +25,12 @@ import datetime
 from google_drive_downloader import GoogleDriveDownloader as gdd
 
 # TODO: test download google file
-file_id = "1cFS436nfXP1XV5aBeauPbTe6WZF_jFZ3fbyi5H3Qd7M"
-gdd.download_file_from_google_drive(file_id=file_id,
-                                    dest_path='/var/lib/lookiero/stock/stock_tool/kpi',
-                                    unzip=True)
+
+#
+# file_id = "1cFS436nfXP1XV5aBeauPbTe6WZF_jFZ3fbyi5H3Qd7M"
+# gdd.download_file_from_google_drive(file_id=file_id,
+#                                     dest_path='/var/lib/lookiero/stock/stock_tool/kpi',
+#                                     unzip=True)
 
 
 def get_fam_size_clima(references, file=None, drop_duplicates=True, family=True, size=True, clima=True):
@@ -100,7 +102,7 @@ day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!
 date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
 
 date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
-date_end = date_start + datetime.timedelta(days = 6)
+date_end = date_start + datetime.timedelta(days=6)
 
 date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
@@ -116,7 +118,7 @@ stock_path = ('/var/lib/lookiero/stock/snapshots')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
 # TODO: change to stock server
-path_save = ('/home/darya/Documents/Reports/2020-07-17-kpi-roturas-particular-case')
+path_save = ('/var/lib/lookiero/stock/stock_tool')
 
 
 #########################################################
@@ -204,7 +206,7 @@ def get_compra_real(date_start_str):
         df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
         df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
 
-        df_compra['info_type'] = 'compra'
+        df_compra['info_type'] = 'pedido'
         df_compra = df_compra.rename(columns={'cantidad_pedida': 'q'})
 
     else:
@@ -364,6 +366,42 @@ def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file
 
     return df_devos
 
+###########################
+# Envios
+
+def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
+
+    if venta_file is None:
+        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+
+    query_envios_text = 'date_ps_done >= @date_start_str and date_ps_done <= @date_end_str'
+
+    df_envios_raw = pd.read_csv(venta_file,
+                               usecols=['reference', 'family_desc', 'size', 'date_ps_done']
+                                # 'date_co',, 'date_terminated', 'purchased'
+                               ).query(query_envios_text)
+
+    df_products_ref_cl = get_fam_size_clima(df_envios_raw.reference.to_list(), file=productos_file,
+                                            drop_duplicates=True, family=False, size=False, clima=True)
+
+    df_envios_ref_cl = pd.merge(df_envios_raw,
+                               df_products_ref_cl,
+                               on='reference',
+                               how='left')
+
+    df_envios = df_envios_ref_cl.groupby(['family_desc', 'clima', 'size']).agg({'reference': 'count'}).reset_index()
+
+    df_envios['info_type'] = 'envios'
+    df_envios = df_envios.rename(columns={'reference': 'q'})
+
+    return df_envios
+
+
+
+
+
+####################################################################
+# run
 
 df_real = pd.DataFrame([])
 try:
@@ -389,5 +427,26 @@ except:
     print('Error in getting pendientes compra')
     pass
 
+try:
+    print('Getting devos real')
+
+    df_real = df_real.append(get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None))
+except:
+    print('Error in getting devos compra')
+    pass
 
 
+try:
+    print('Getting envios real')
+
+    df_real = df_real.append(get_envios_real(date_start_str, date_end_str, venta_file=None, productos_file=None))
+except:
+    print('Error in getting envios compra')
+    pass
+
+
+# add dates
+df_real['date_week'] = date_start.date()
+# save
+name_save = 'eval_real_data.csv.gz'
+df_real.to_csv(os.path.join(path_save, name_save), mode='a', header=False)

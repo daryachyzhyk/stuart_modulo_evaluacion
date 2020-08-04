@@ -22,28 +22,56 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import datetime
+from google_drive_downloader import GoogleDriveDownloader as gdd
+
+# TODO: test download google file
+file_id = "1cFS436nfXP1XV5aBeauPbTe6WZF_jFZ3fbyi5H3Qd7M"
+gdd.download_file_from_google_drive(file_id=file_id,
+                                    dest_path='/var/lib/lookiero/stock/stock_tool/kpi',
+                                    unzip=True)
 
 
-def get_fam_size_clima(references, file, drop_duplicates=True):
+def get_fam_size_clima(references, file=None, drop_duplicates=True, family=True, size=True, clima=True):
     '''
+
     Get 'family_desc', 'size', 'clima' for given list of references
+
     :param references: list
         list of references
     :param file: str
         path to csv file, '/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz'
-    :return:
+    :param drop_duplicates: binary
+        drop duplicates in product file, if False it could increase the number of items in the output
+    :param family: binary
+        include family description
+    :param size: binary
+        include size description
+    :param clima: binary
+        include clima description
+    :return: pandas.DataFrame()
+
     '''
 
+    if file is None:
+        file = '/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz'
     query_product_text = 'reference in @references'
 
-    df = pd.read_csv(file, usecols=['reference', 'family_desc', 'size', 'clima']).query(query_product_text)
+    usecols = ['reference']
+    if family is True:
+        usecols.append('family_desc')
+    if size is True:
+        usecols.append('size')
+    if clima is True:
+        usecols.append('clima')
+
+    df = pd.read_csv(file, usecols=usecols).query(query_product_text)
     if drop_duplicates:
         df = df.drop_duplicates('reference', keep='last')
     return df
 
 
 def get_current_season(date_):
-    if isinstance(fecha_stock_actual_start, datetime.datetime):
+    if isinstance(date_, datetime.datetime):
         date_fisrt_season = datetime.datetime(2016, 1, 1)
 
         # delta_month = (date_.year - date_fisrt_season.year) * 12 + date_.month - date_fisrt_season.month
@@ -264,28 +292,28 @@ def get_pendientes_real(date_actual, productos_file=None):
     # query_product_text = 'reference in @list_reference_stock'
 
 
-    aa = set(df_pendientes_actual_all.reference, df_pendientes_prior_all.reference)
+    references_list = set(list(df_pendientes_actual_all.reference.to_list() +  df_pendientes_prior_all.reference.to_list()))
+
+    df_productos_all_ref_cl = get_fam_size_clima(references_list, drop_duplicates=True, family=False, size=False, clima=True)
 
 
-    df_productos_all = get_fam_size_clima(set(references), file, drop_duplicates=True)
 
 
-
-    df_productos_all_ref_cl = pd.read_csv(productos_file,
-                                          usecols=['reference', 'clima'])
+    # df_productos_all_ref_cl = pd.read_csv(productos_file,
+    #                                       usecols=['reference', 'clima'])
 
     df_pendientes_actual = pd.merge(df_pendientes_actual_all,
-                                    df_productos_all_ref_cl.drop_duplicates('reference', keep='last'),
+                                    df_productos_all_ref_cl,
                                     on='reference',
                                     how='left')
 
-    df_pendientes_anterior = pd.merge(df_pendientes_anterior_all,
-                                      df_productos_all_ref_cl.drop_duplicates('reference', keep='last'),
+    df_pendientes_prior = pd.merge(df_pendientes_prior_all,
+                                      df_productos_all_ref_cl,
                                       on='reference',
                                       how='left')
 
-    df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_informado')
-    df_pendientes_anterior['clima'] = df_pendientes_anterior['clima'].fillna('no_informado')
+    df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_definido')
+    df_pendientes_prior['clima'] = df_pendientes_prior['clima'].fillna('no_definido')
 
     # TODO: group and restar
     df_pendientes_actual_ft = df_pendientes_actual.groupby(['family_desc', 'size']).agg(

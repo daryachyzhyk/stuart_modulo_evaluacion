@@ -300,10 +300,6 @@ def get_pendientes_real(date_actual, productos_file=None):
     df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_definido')
     df_pendientes_prior['clima'] = df_pendientes_prior['clima'].fillna('no_definido')
 
-    # TODO: group and restar
-
-
-
     df_pendientes_actual_fct = df_pendientes_actual.groupby(['family_desc', 'clima', 'size']).agg(
         {'pendiente': 'sum'}).reset_index()
 
@@ -332,6 +328,43 @@ def get_pendientes_real(date_actual, productos_file=None):
 
 # df_pendientes = get_pendientes_real(date_start, productos_file=None)
 
+
+
+
+###########################################
+# Devos
+
+
+def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
+
+    if venta_file is None:
+        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+
+    query_devos_text = 'date_terminated >= @date_start_str and date_terminated <= @date_end_str and purchased == 0'
+
+    df_devos_raw = pd.read_csv(venta_file,
+                                    usecols=['reference', 'family_desc', 'size', 'date_terminated', 'purchased']
+                                    # 'date_co',    'date_ps_done'
+                                    ).query(query_devos_text)
+
+    df_products_ref_cl = get_fam_size_clima(df_devos_raw.reference.to_list(), file=productos_file,
+                                            drop_duplicates=True, family=False, size=False, clima=True)
+
+
+    df_devos_ref_cl = pd.merge(df_devos_raw,
+                               df_products_ref_cl,
+                               on='reference',
+                               how='left')
+
+    df_devos = df_devos_ref_cl.groupby(['family_desc', 'clima', 'size']).agg({'reference': 'count'}).reset_index()
+
+    df_devos['info_type'] = 'devos'
+    df_devos = df_devos.rename(columns={'reference': 'q'})
+
+
+    return df_devos
+
+
 df_real = pd.DataFrame([])
 try:
     print('Getting stock real for the dates: ' + date_start_str + ' - ' + date_end_str)
@@ -358,46 +391,3 @@ except:
 
 
 
-
-###########################################
-# Devos
-
-
-
-query_devos_text = 'date_terminated >= @fecha_stock_actual_start_str and date_terminated <= @fecha_stock_actual_end_str and purchased == 0'
-
-df_devos_real = pd.read_csv(venta_file,
-                           usecols=['reference', 'family_desc', 'size', 'date_ps_done', 'date_co',
-                                    'date_terminated', 'purchased']
-                           ).query(query_devos_text)
-
-# TODO: add reference climate
-
-df_devos_real_ft = df_devos_real.groupby(['family_desc', 'size']).agg({'reference': 'count'}).reset_index()
-df_devos_real_ft = df_devos_real_ft.rename(columns={'reference': 'devos_real'})
-
-df_devos_stuart_real_ft = pd.merge(df_devos_real_ft,
-                                            df_proyeccion_familia_talla[['family_desc', 'size', 'devos', 'size_ord']],
-                                            on=['family_desc', 'size'])
-
-df_devos_stuart_real_ft = df_devos_stuart_real_ft.rename(columns={'devos': 'devos_proyeccion'})
-
-df_devos_stuart_real_ft_melt = pd.melt(df_devos_stuart_real_ft,
-                                             id_vars=['family_desc', 'size', 'size_ord'],
-                                             value_vars=['devos_real', 'devos_proyeccion'],
-                                             var_name='devos_type',
-                                             value_name='devos')
-
-# df_devos_stuart_real_ft_melt = df_devos_stuart_real_ft_melt.sort_values(by=['family_desc', 'size_ord'])
-
-size_order = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'X4XL']
-
-plot_catplot_stuart_real(df_devos_stuart_real_ft_melt,
-                         x="size",
-                         y="devos",
-                         hue='devos_type',
-                         col="family_desc",
-                         col_wrap=4, title_name='Devos proyeccion vs real, familia - talla',
-                         path_results=path_results,
-                         file_name='plot_devos_stuart_real_familia_talla.png',
-                         order=size_order)

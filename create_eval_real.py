@@ -214,22 +214,6 @@ def get_compra_real(date_start_str):
 
 # df_compra = get_compra_real(date_start_str)
 
-df_real = pd.DataFrame([])
-try:
-    print('Getting stock real for the dates: ' + date_start + ' - ' + date_end)
-    df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
-    df_real.append(df_stock)
-except:
-    print('Error in getting rel stock')
-    pass
-
-try:
-    print('Getting compra real')
-    df_stock = get_compra_real(date_start_str)
-    df_real.append(df_stock)
-except:
-    print('Error in getting real compra')
-    pass
 
 
 #################################################################3
@@ -294,7 +278,8 @@ def get_pendientes_real(date_actual, productos_file=None):
 
     references_list = set(list(df_pendientes_actual_all.reference.to_list() +  df_pendientes_prior_all.reference.to_list()))
 
-    df_productos_all_ref_cl = get_fam_size_clima(references_list, drop_duplicates=True, family=False, size=False, clima=True)
+    df_productos_all_ref_cl = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
+                                                 family=False, size=False, clima=True)
 
 
 
@@ -316,147 +301,60 @@ def get_pendientes_real(date_actual, productos_file=None):
     df_pendientes_prior['clima'] = df_pendientes_prior['clima'].fillna('no_definido')
 
     # TODO: group and restar
-    df_pendientes_actual_ft = df_pendientes_actual.groupby(['family_desc', 'size']).agg(
+
+
+
+    df_pendientes_actual_fct = df_pendientes_actual.groupby(['family_desc', 'clima', 'size']).agg(
         {'pendiente': 'sum'}).reset_index()
 
-    df_pendientes_anterior_ft = df_pendientes_anterior.groupby(['family_desc', 'size']).agg(
+    df_pendientes_anterior_fct = df_pendientes_prior.groupby(['family_desc', 'clima', 'size']).agg(
         {'pendiente': 'sum'}).reset_index()
 
-    df_pendientes_actual_ft = df_pendientes_actual_ft.rename(columns={'pendiente': 'pendiente_actual'})
-
-    df_pendientes_anterior_ft = df_pendientes_anterior_ft.rename(columns={'pendiente': 'pendiente_anterior'})
-
-    df_pendientes_ft = pd.merge(df_pendientes_actual_ft,
-                                df_pendientes_anterior_ft,
-                                on=['family_desc', 'size'])
-
-    df_pendientes_ft['pendiente_real'] = np.abs(
-        df_pendientes_ft['pendiente_anterior'] - df_pendientes_ft['pendiente_actual'])
-
-    df_pendientes_stuart_realidad_ft = pd.merge(df_pendientes_ft,
-                                                df_proyeccion_familia_talla[
-                                                    ['family_desc', 'size', 'pendientes', 'size_ord']],
-                                                on=['family_desc', 'size'])
-
-    df_pendientes_stuart_realidad_ft = df_pendientes_stuart_realidad_ft.rename(
-        columns={'pendientes': 'pendiente_proyeccion'})
-
-    df_pendientes_stuart_real_ft_merge = pd.melt(df_pendientes_stuart_realidad_ft,
-                                                 id_vars=['family_desc', 'size', 'size_ord'],
-                                                 value_vars=['pendiente_real', 'pendiente_proyeccion'],
-                                                 var_name='pendiente_type',
-                                                 value_name='pendiente'
-                                                 )
-
-pendientes_folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
+    df_pendientes_actual_fct = df_pendientes_actual_fct.rename(columns={'pendiente': 'pendiente_actual'})
+    df_pendientes_anterior_fct = df_pendientes_anterior_fct.rename(columns={'pendiente': 'pendiente_anterior'})
 
 
+    df_pendientes_fct = pd.merge(df_pendientes_actual_fct,
+                                df_pendientes_anterior_fct,
+                                on=['family_desc', 'clima', 'size'])
 
-fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
+    df_pendientes_fct['pendiente_real'] = np.abs(
+        df_pendientes_fct['pendiente_anterior'] - df_pendientes_fct['pendiente_actual'])
 
-# date_datetime = fecha_stock_actual_start
-# date_str = pendientes_fecha_start
-
-
-
-
-# delta_date_stock = date_end - date_start
-#
-
-#
-# df_stock_all = pd.DataFrame([])
-#
-# for i in range(delta_date_stock.days + 1):
-#     day = date_start + datetime.timedelta(days=i)
-#     print(day)
-#     stock_fecha = day.strftime('%Y%m%d')
-#     stock_file = sorted(glob.glob(os.path.join(stock_path, stock_fecha + '*')))[0]
-#     print(stock_file)
-#     query_stock_text = 'real_stock > 0 and active > 0'
-#
-#     df_stock_day = pd.read_csv(stock_file,
-#                                usecols=['reference', 'family', 'real_stock']
-#                                ).query(query_stock_text)
-#     df_stock_day['date'] = day
-#
-#     df_stock_all = df_stock_all.append(df_stock_day)
-#
-# # add clima, family_desc and size
-# list_references_stock = df_stock_all["reference"].to_list()
-# df_stock_products = get_fam_size_clima(list_references_stock, productos_file, drop_duplicates=True)
-#
-#
-# df_stock_reference = pd.merge(df_stock_all, df_stock_products, on='reference', how='left')
-#
-# df_stock = df_stock_reference.groupby(['family_desc', 'clima', 'size']).agg({'real_stock': 'sum'}).reset_index()
-#
-# df_stock['info_type'] = 'stock'
-# df_stock = df_stock.rename(columns={'real_stock': 'q'})
-#
-#
+    df_pendientes_fct['info_type'] = 'pendientes'
+    df_pendientes_fct = df_pendientes_fct.rename(columns={'pendiente_real': 'q'})
 
 
-#######################################################
-# info de cada prenda
-list_reference_stock = df_stock_all["reference"].to_list()
-query_product_text = 'reference in @list_reference_stock'
+    df_pendientes_fct  = df_pendientes_fct.drop(columns=['pendiente_actual', 'pendiente_anterior'])
+
+    return df_pendientes_fct
 
 
-df_productos = pd.read_csv(productos_file,
-                           usecols=['reference', 'family_desc', 'size', 'clima'] # , 'clima_grupo'
-                           ).query(query_product_text)
+# df_pendientes = get_pendientes_real(date_start, productos_file=None)
 
+df_real = pd.DataFrame([])
+try:
+    print('Getting stock real for the dates: ' + date_start_str + ' - ' + date_end_str)
+    df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
+    df_real = df_real.append(df_stock)
+except:
+    print('Error in getting real stock')
+    pass
 
+try:
+    print('Getting compra real')
+    df_real = df_real.append(get_compra_real(date_start_str))
+except:
+    print('Error in getting real compra. Check if data is updated on the Google drive')
+    pass
 
+try:
+    print('Getting pendientes real')
 
-
-#########################################################
-# stock actual añadir familia, talla, clima
-
-df_stock_reference = pd.merge(df_stock_all, df_productos, on='reference', how='left')
-
-
-
-df_stock_familia_talla = df_stock_reference.groupby(['family_desc', 'size']).agg({'stock_real_week': 'sum',
-                                                                                  'date': 'last'}).reset_index()
-
-df_stock_familia_clima = df_stock_reference.groupby(['family_desc', 'clima']).agg({'stock_real_week': 'sum',
-                                                                                   'date': 'last'}).reset_index()
-
-df_stock_familia_clima['clima_desc'] = df_stock_familia_clima['clima'].replace(dic_clima)
-df_stock_familia_clima['clima'] = df_stock_familia_clima['clima'].astype(str)
-
-df_stock_familia_talla['stock_real'] = (df_stock_familia_talla['stock_real_week'] / 7)
-
-df_stock_familia_clima['stock_real'] = (df_stock_familia_clima['stock_real_week'] / 7)
-
-
-
-# df_stock_familia_talla['stock_mean'] = (df_stock_familia_talla['real_stock'] / 7).round(0)
-# df_stock_familia_talla['stock_mean1'] = (df_stock_familia_talla['real_stock'] / 7).apply(np.ceil)
-
-
-######
-# fechas
-date_stock_start
-fecha_stock_actual_start = datetime.strptime(fecha_stock_actual_start_str, '%Y-%m-%d')
-fecha_stock_actual_end = fecha_stock_actual_start + timedelta(days=6)
-
-delta_fecha_stock_actual = fecha_stock_actual_end - fecha_stock_actual_start
-
-
-
-fecha_compra_str = dict_fechas[fecha_stock_actual_start_str][0]
-
-fecha_stuart_str = dict_fechas[fecha_stock_actual_start_str][1]
-############################
-# files
-stock_proyeccion_file = (os.path.join'/var/lib/lookiero/stock/stock_tool/stuart/20200616/proyeccion_stock_todos.csv.gz')
-
-
-
-
-
+    df_real = df_real.append(get_pendientes_real(date_start))
+except:
+    print('Error in getting pendientes compra')
+    pass
 
 
 

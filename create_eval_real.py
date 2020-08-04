@@ -40,9 +40,35 @@ def get_fam_size_clima(references, file, drop_duplicates=True):
     if drop_duplicates:
         df = df.drop_duplicates('reference', keep='last')
     return df
+
+
+def get_current_season(date_):
+    if isinstance(fecha_stock_actual_start, datetime.datetime):
+        date_fisrt_season = datetime.datetime(2016, 1, 1)
+
+        # delta_month = (date_.year - date_fisrt_season.year) * 12 + date_.month - date_fisrt_season.month
+
+        delta_season = (date_.year - date_fisrt_season.year) * 2
+        if date_.month <= 6:
+            season = delta_season + 1
+        else:
+            season = delta_season + 2
+    else:
+        print('Shoud be datetime')
+        season = np.nan()
+    return season
+
+
 ####################################################################################################################
 # Date to analyze
 day_today = datetime.datetime.now()
+# TODO: eliminate test
+
+day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
 date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
 
 date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
@@ -182,9 +208,14 @@ except:
 # Pendientes
 
 
-def get_pendientes_real():
-    pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
-    fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
+# pedidos[,date_week:=as_date(cut(date,"week"))]
+# pedidos <- merge(pedidos,unique(productos[,.(reference,clima)]),by="reference",all.x = T)
+# pedidos[date_week == "2020-07-20",.(pendientes_recibidas=sum(recibido)),.(date_week,family_desc,clima,size)][order(-date_week)]
+
+def get_pendientes_real(date_actual, productos_file=None):
+    # pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
+    if productos_file is None:
+        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
     # date_datetime = fecha_stock_actual_start
     # date_str = pendientes_fecha_start
@@ -212,23 +243,33 @@ def get_pendientes_real():
                           "brand", "precio_compra", "precio_compra_iva", "precio_compra_libras",
                           "precio_compra_libras_iva"]
 
-        df_raw['season'] = df_raw['reference'].str.extract('(^[0-9]+)')
-
-        df_raw['season'] = df_raw['season'].fillna('0')
-        df_raw['season'] = df_raw['season'].astype(int)
+        # calculate the season o use from .txt
+        # df_raw['season'] = df_raw['reference'].str.extract('(^[0-9]+)')
+        # df_raw['season'] = df_raw['season'].fillna('0')
+        # df_raw['season'] = df_raw['season'].astype(int)
 
         season_actual = get_current_season(date_datetime)
-        df = df_raw[df_raw['season'] >= season_actual - 1]
+        df = df_raw[df_raw['temporada'] >= season_actual - 1]
 
         return df
 
-    df_pendientes_actual_all = load_pendientes(fecha_stock_actual_start)
+    date_prior = date_actual - datetime.timedelta(days=7)
+    # fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
+    df_pendientes_actual_all = load_pendientes(date_actual)
 
-    df_pendientes_anterior_all = load_pendientes(fecha_pendientes_anterior)
+    df_pendientes_prior_all = load_pendientes(date_prior)
 
     # add info about climate
     # list_reference_pendientes = df_stock_all["reference"].to_list()
     # query_product_text = 'reference in @list_reference_stock'
+
+
+    aa = set(df_pendientes_actual_all.reference, df_pendientes_prior_all.reference)
+
+
+    df_productos_all = get_fam_size_clima(set(references), file, drop_duplicates=True)
+
+
 
     df_productos_all_ref_cl = pd.read_csv(productos_file,
                                           usecols=['reference', 'clima'])
@@ -387,11 +428,7 @@ stock_proyeccion_file = (os.path.join'/var/lib/lookiero/stock/stock_tool/stuart/
 
 
 
-def get_current_season(_date):
-    if isinstance(_date, datetime.datetime):
-        _date = _date.date()
-    _date = _date.replace(year=2000)
-    return [season for season, (start, end) in seasons if start <= _date <= end][0]
+
 
 
 

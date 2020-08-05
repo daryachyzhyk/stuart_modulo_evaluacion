@@ -4,26 +4,21 @@ Script to create the table of the real data last week:
 * compra
 * sent
 * returns
-*
+* pendientes
 
 The scrip take the date for analyze as a previous Monday to the day of run the code
 The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size', 'info_type', 'q'
 
 '''
 
-
-
 import os
 import glob
 import pandas as pd
-
 import numpy as np
-import matplotlib.pyplot as plt
-
 import datetime
 from google_drive_downloader import GoogleDriveDownloader as gdd
 
-# TODO: test download google file
+# TODO: make a google file download
 
 #
 # file_id = "1cFS436nfXP1XV5aBeauPbTe6WZF_jFZ3fbyi5H3Qd7M"
@@ -88,39 +83,6 @@ def get_current_season(date_):
     return season
 
 
-####################################################################################################################
-# Date to analyze
-day_today = datetime.datetime.now()
-# TODO: eliminate test
-
-day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-
-
-date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
-
-date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
-date_end = date_start + datetime.timedelta(days=6)
-
-date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
-
-
-# fecha_stock_actual_start_str = '2020-07-13'
-
-
-######################################################################################3
-
-# path
-stock_path = ('/var/lib/lookiero/stock/snapshots')
-
-productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-
-
-path_save = ('/var/lib/lookiero/stock/stock_tool')
-
-
-#########################################################
 ########################################
 # stock real
 def get_stock_real(date_start, date_end, stock_path, how='monday'):
@@ -158,10 +120,6 @@ def get_stock_real(date_start, date_end, stock_path, how='monday'):
                                    ).query(query_stock_text)
         df_stock_all['date'] = date_start
 
-
-
-
-    # add clima, family_desc and size
     list_references_stock = df_stock_all["reference"].to_list()
     df_stock_products = get_fam_size_clima(list_references_stock, productos_file, drop_duplicates=True)
 
@@ -174,12 +132,7 @@ def get_stock_real(date_start, date_end, stock_path, how='monday'):
     df_stock = df_stock.rename(columns={'real_stock': 'q'})
     return df_stock
 
-df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
 
-
-
-################################################################################################################
-# load Compra
 def get_compra_real(date_start_str):
     # TODO: download compra file from Google Drive
 
@@ -213,17 +166,6 @@ def get_compra_real(date_start_str):
 
     return df_compra
 
-# df_compra = get_compra_real(date_start_str)
-
-
-
-#################################################################3
-# Pendientes
-
-
-# pedidos[,date_week:=as_date(cut(date,"week"))]
-# pedidos <- merge(pedidos,unique(productos[,.(reference,clima)]),by="reference",all.x = T)
-# pedidos[date_week == "2020-07-20",.(pendientes_recibidas=sum(recibido)),.(date_week,family_desc,clima,size)][order(-date_week)]
 
 def get_pendientes_real(date_actual, productos_file=None):
     # pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
@@ -327,15 +269,6 @@ def get_pendientes_real(date_actual, productos_file=None):
     return df_pendientes_fct
 
 
-# df_pendientes = get_pendientes_real(date_start, productos_file=None)
-
-
-
-
-###########################################
-# Devos
-
-
 def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
 
     if venta_file is None:
@@ -397,10 +330,74 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
 
 
 
+def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None):
+    if file_estimates is None:
+        file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
+
+    if file_real is None:
+        file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
+
+    if file_save is None:
+        file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
+
+    df_estimates_raw = pd.read_csv(file_estimates)
+    df_estimates = df_estimates_raw[df_estimates_raw['caracteristica'] == 'size']
+
+    df_estimates = df_estimates.rename(columns={'clase': 'size',
+                                                'q': 'q_estimates'})
+    df_real = pd.read_csv(file_real)
+
+    df_real = df_real.rename(columns={'q': 'q_real'})
+
+    df = pd.merge(df_estimates, df_real,
+                  on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
+                  how='outer')
+
+
+    if not os.path.isfile(file_save):
+        df.to_csv(file_save, mode='a', index=False, header=True)
+    else:
+        df.to_csv(file_save, mode='a', index=False, header=False)
+
 
 
 ####################################################################
 # run
+
+####################################################################################################################
+# Date to analyze
+day_today = datetime.datetime.now()
+# TODO: eliminate test
+
+day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
+
+date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
+date_end = date_start + datetime.timedelta(days=6)
+
+date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
+
+
+# fecha_stock_actual_start_str = '2020-07-13'
+
+
+######################################################################################3
+
+# path
+stock_path = ('/var/lib/lookiero/stock/snapshots')
+
+productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+
+path_save = ('/var/lib/lookiero/stock/stock_tool')
+
+
+#########################################################
+
 
 df_real = pd.DataFrame([])
 try:
@@ -457,34 +454,5 @@ else: # else it exists so append without writing the header
    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
 
 
+get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None)
 
-
-
-def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None):
-    if file_estimates is None:
-        file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
-
-    if file_real is None:
-        file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
-
-    if file_save is None:
-        file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
-
-    df_estimates_raw = pd.read_csv(file_estimates)
-    df_estimates = df_estimates_raw[df_estimates_raw['caracteristica'] == 'size']
-
-    df_estimates = df_estimates.rename(columns={'clase': 'size',
-                                                'q': 'q_estimates'})
-    df_real = pd.read_csv(file_real)
-
-    df_real = df_real.rename(columns={'q': 'q_real'})
-
-    df = pd.merge(df_estimates, df_real,
-                  on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
-                  how='outer')
-
-
-    if not os.path.isfile(file_save):
-        df.to_csv(file_save, mode='a', index=False, header=True)
-    else:
-        df.to_csv(file_save, mode='a', index=False, header=False)

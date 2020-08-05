@@ -13,11 +13,10 @@ The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size
 
 
 
-
 import os
 import glob
 import pandas as pd
-import seaborn as sns
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -94,7 +93,7 @@ def get_current_season(date_):
 day_today = datetime.datetime.now()
 # TODO: eliminate test
 
-day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!
+day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -117,7 +116,7 @@ stock_path = ('/var/lib/lookiero/stock/snapshots')
 
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
-# TODO: change to stock server
+
 path_save = ('/var/lib/lookiero/stock/stock_tool')
 
 
@@ -449,4 +448,43 @@ except:
 df_real['date_week'] = date_start.date()
 # save
 name_save = 'eval_real_data.csv.gz'
-df_real.to_csv(os.path.join(path_save, name_save), mode='a', header=False)
+# df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False) # , header=False
+
+# if file does not exist write header
+if not os.path.isfile(os.path.join(path_save, name_save)):
+   df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
+else: # else it exists so append without writing the header
+   df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+
+
+
+
+
+def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None):
+    if file_estimates is None:
+        file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
+
+    if file_real is None:
+        file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
+
+    if file_save is None:
+        file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
+
+    df_estimates_raw = pd.read_csv(file_estimates)
+    df_estimates = df_estimates_raw[df_estimates_raw['caracteristica'] == 'size']
+
+    df_estimates = df_estimates.rename(columns={'clase': 'size',
+                                                'q': 'q_estimates'})
+    df_real = pd.read_csv(file_real)
+
+    df_real = df_real.rename(columns={'q': 'q_real'})
+
+    df = pd.merge(df_estimates, df_real,
+                  on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
+                  how='outer')
+
+
+    if not os.path.isfile(file_save):
+        df.to_csv(file_save, mode='a', index=False, header=True)
+    else:
+        df.to_csv(file_save, mode='a', index=False, header=False)

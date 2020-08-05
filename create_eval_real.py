@@ -2,9 +2,9 @@
 Script to create the table of the real data last week:
 * stock
 * compra
-* sent
-* returns
-* pendientes
+* sent, envios
+* returns, devos
+* pendientes recibidos
 
 The scrip take the date for analyze as a previous Monday to the day of run the code
 The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size', 'info_type', 'q'
@@ -330,7 +330,7 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
 
 
 
-def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None):
+def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None):
     if file_estimates is None:
         file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
 
@@ -341,7 +341,14 @@ def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None)
         file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
 
     df_estimates_raw = pd.read_csv(file_estimates)
+
+    df_estimates_raw = df_estimates_raw[df_estimates_raw['date_week'] == date_start_str]
+
+    df_estimates_raw = df_estimates_raw[df_estimates_raw['id_stuart'] == df_estimates_raw['id_stuart'].max()]
+
+
     df_estimates = df_estimates_raw[df_estimates_raw['caracteristica'] == 'size']
+
 
     df_estimates = df_estimates.rename(columns={'clase': 'size',
                                                 'q': 'q_estimates'})
@@ -349,9 +356,18 @@ def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None)
 
     df_real = df_real.rename(columns={'q': 'q_real'})
 
+    dic_clima = {'0.0': '0',
+                 '1.0': '1',
+
+                 '2.0': '2',
+                 '3.0': '3'}
+
+    df_real['clima'] = df_real['clima'].replace(dic_clima)
+
     df = pd.merge(df_estimates, df_real,
                   on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
                   how='outer')
+    df['q_real'] = df['q_real'].fillna(0)
 
 
     if not os.path.isfile(file_save):
@@ -369,7 +385,7 @@ def get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None)
 day_today = datetime.datetime.now()
 # TODO: eliminate test
 
-day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 
@@ -454,5 +470,8 @@ else: # else it exists so append without writing the header
    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
 
 
-get_eval_estimates_real(file_estimates=None, file_real=None, file_save=None)
+merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None)
 
+
+
+# df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)

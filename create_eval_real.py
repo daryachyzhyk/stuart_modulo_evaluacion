@@ -352,6 +352,11 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
     df_estimates = df_estimates.rename(columns={'clase': 'size',
                                                 'q': 'q_estimates'})
+
+    # drop 'sin_clase'
+    df_estimates = df_estimates[df_estimates['clima'] != 'sin_clase']
+    df_estimates = df_estimates[df_estimates['size'] != 'sin_clase']
+
     df_real = pd.read_csv(file_real)
 
     df_real = df_real.rename(columns={'q': 'q_real'})
@@ -371,8 +376,10 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
 
     if not os.path.isfile(file_save):
+        print('Creating a new file ' + file_save)
         df.to_csv(file_save, mode='a', index=False, header=True)
     else:
+        print('Appending to existing file ' + file_save)
         df.to_csv(file_save, mode='a', index=False, header=False)
 
 

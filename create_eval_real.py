@@ -166,107 +166,107 @@ def get_compra_real(date_start_str):
 
     return df_compra
 
-
-def get_pendientes_real(date_actual, productos_file=None):
-    # pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
-    if productos_file is None:
-        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-
-    # date_datetime = fecha_stock_actual_start
-    # date_str = pendientes_fecha_start
-
-    def load_pendientes(date_datetime):
-        '''
-        Load the PENDIENTES_XXX.txt from stock server based on the date in datetime format for the seasons not older then
-        previous to the actual season.
-
-        :param date_datetime: datetime.datetime
-            The date of the day
-        :return: pandas.DataFrame
-        '''
-
-        folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
-        date_str = date_datetime.strftime('%d%m%Y')
-        file = os.path.join(folder, 'PENDIENTES_' + date_str + '.txt')
-        # pendientes_anteriro_file = os.path.join(pendientes_folder, 'PENDIENTES_' + pendientes_fecha_anterior + '.txt')
-
-        df_raw = pd.read_csv(file, sep=";", header=None, error_bad_lines=False, encoding="ISO-8859-1")
-
-        df_raw = df_raw.drop(df_raw.columns[-1], axis=1)
-
-        df_raw.columns = ["reference", "pendiente", "date", "family", "family_desc", "color", "temporada", "size",
-                          "brand", "precio_compra", "precio_compra_iva", "precio_compra_libras",
-                          "precio_compra_libras_iva"]
-
-        # calculate the season o use from .txt
-        # df_raw['season'] = df_raw['reference'].str.extract('(^[0-9]+)')
-        # df_raw['season'] = df_raw['season'].fillna('0')
-        # df_raw['season'] = df_raw['season'].astype(int)
-
-        season_actual = get_current_season(date_datetime)
-        df = df_raw[df_raw['temporada'] >= season_actual - 1]
-
-        return df
-
-    date_prior = date_actual - datetime.timedelta(days=7)
-    # fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
-    df_pendientes_actual_all = load_pendientes(date_actual)
-
-    df_pendientes_prior_all = load_pendientes(date_prior)
-
-    # add info about climate
-    # list_reference_pendientes = df_stock_all["reference"].to_list()
-    # query_product_text = 'reference in @list_reference_stock'
-
-
-    references_list = set(list(df_pendientes_actual_all.reference.to_list() +  df_pendientes_prior_all.reference.to_list()))
-
-    df_productos_all_ref_cl = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
-                                                 family=False, size=False, clima=True)
-
-
-
-
-    # df_productos_all_ref_cl = pd.read_csv(productos_file,
-    #                                       usecols=['reference', 'clima'])
-
-    df_pendientes_actual = pd.merge(df_pendientes_actual_all,
-                                    df_productos_all_ref_cl,
-                                    on='reference',
-                                    how='left')
-
-    df_pendientes_prior = pd.merge(df_pendientes_prior_all,
-                                      df_productos_all_ref_cl,
-                                      on='reference',
-                                      how='left')
-
-    df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_definido')
-    df_pendientes_prior['clima'] = df_pendientes_prior['clima'].fillna('no_definido')
-
-    df_pendientes_actual_fct = df_pendientes_actual.groupby(['family_desc', 'clima', 'size']).agg(
-        {'pendiente': 'sum'}).reset_index()
-
-    df_pendientes_anterior_fct = df_pendientes_prior.groupby(['family_desc', 'clima', 'size']).agg(
-        {'pendiente': 'sum'}).reset_index()
-
-    df_pendientes_actual_fct = df_pendientes_actual_fct.rename(columns={'pendiente': 'pendiente_actual'})
-    df_pendientes_anterior_fct = df_pendientes_anterior_fct.rename(columns={'pendiente': 'pendiente_anterior'})
-
-
-    df_pendientes_fct = pd.merge(df_pendientes_actual_fct,
-                                df_pendientes_anterior_fct,
-                                on=['family_desc', 'clima', 'size'])
-
-    df_pendientes_fct['pendiente_real'] = np.abs(
-        df_pendientes_fct['pendiente_anterior'] - df_pendientes_fct['pendiente_actual'])
-
-    df_pendientes_fct['info_type'] = 'pendientes'
-    df_pendientes_fct = df_pendientes_fct.rename(columns={'pendiente_real': 'q'})
-
-
-    df_pendientes_fct  = df_pendientes_fct.drop(columns=['pendiente_actual', 'pendiente_anterior'])
-
-    return df_pendientes_fct
+#
+# def get_pendientes_real(date_actual, productos_file=None):
+#     # pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
+#     if productos_file is None:
+#         productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+#
+#     # date_datetime = fecha_stock_actual_start
+#     # date_str = pendientes_fecha_start
+#
+#     def load_pendientes(date_datetime):
+#         '''
+#         Load the PENDIENTES_XXX.txt from stock server based on the date in datetime format for the seasons not older then
+#         previous to the actual season.
+#
+#         :param date_datetime: datetime.datetime
+#             The date of the day
+#         :return: pandas.DataFrame
+#         '''
+#
+#         folder = ('/var/lib/lookiero/stock/Pendiente_llegar')
+#         date_str = date_datetime.strftime('%d%m%Y')
+#         file = os.path.join(folder, 'PENDIENTES_' + date_str + '.txt')
+#         # pendientes_anteriro_file = os.path.join(pendientes_folder, 'PENDIENTES_' + pendientes_fecha_anterior + '.txt')
+#
+#         df_raw = pd.read_csv(file, sep=";", header=None, error_bad_lines=False, encoding="ISO-8859-1")
+#
+#         df_raw = df_raw.drop(df_raw.columns[-1], axis=1)
+#
+#         df_raw.columns = ["reference", "pendiente", "date", "family", "family_desc", "color", "temporada", "size",
+#                           "brand", "precio_compra", "precio_compra_iva", "precio_compra_libras",
+#                           "precio_compra_libras_iva"]
+#
+#         # calculate the season o use from .txt
+#         # df_raw['season'] = df_raw['reference'].str.extract('(^[0-9]+)')
+#         # df_raw['season'] = df_raw['season'].fillna('0')
+#         # df_raw['season'] = df_raw['season'].astype(int)
+#
+#         season_actual = get_current_season(date_datetime)
+#         df = df_raw[df_raw['temporada'] >= season_actual - 1]
+#
+#         return df
+#
+#     date_prior = date_actual - datetime.timedelta(days=7)
+#     # fecha_pendientes_anterior = fecha_stock_actual_start - datetime.timedelta(days=7)
+#     df_pendientes_actual_all = load_pendientes(date_actual)
+#
+#     df_pendientes_prior_all = load_pendientes(date_prior)
+#
+#     # add info about climate
+#     # list_reference_pendientes = df_stock_all["reference"].to_list()
+#     # query_product_text = 'reference in @list_reference_stock'
+#
+#
+#     references_list = set(list(df_pendientes_actual_all.reference.to_list() +  df_pendientes_prior_all.reference.to_list()))
+#
+#     df_productos_all_ref_cl = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
+#                                                  family=False, size=False, clima=True)
+#
+#
+#
+#
+#     # df_productos_all_ref_cl = pd.read_csv(productos_file,
+#     #                                       usecols=['reference', 'clima'])
+#
+#     df_pendientes_actual = pd.merge(df_pendientes_actual_all,
+#                                     df_productos_all_ref_cl,
+#                                     on='reference',
+#                                     how='left')
+#
+#     df_pendientes_prior = pd.merge(df_pendientes_prior_all,
+#                                       df_productos_all_ref_cl,
+#                                       on='reference',
+#                                       how='left')
+#
+#     df_pendientes_actual['clima'] = df_pendientes_actual['clima'].fillna('no_definido')
+#     df_pendientes_prior['clima'] = df_pendientes_prior['clima'].fillna('no_definido')
+#
+#     df_pendientes_actual_fct = df_pendientes_actual.groupby(['family_desc', 'clima', 'size']).agg(
+#         {'pendiente': 'sum'}).reset_index()
+#
+#     df_pendientes_anterior_fct = df_pendientes_prior.groupby(['family_desc', 'clima', 'size']).agg(
+#         {'pendiente': 'sum'}).reset_index()
+#
+#     df_pendientes_actual_fct = df_pendientes_actual_fct.rename(columns={'pendiente': 'pendiente_actual'})
+#     df_pendientes_anterior_fct = df_pendientes_anterior_fct.rename(columns={'pendiente': 'pendiente_anterior'})
+#
+#
+#     df_pendientes_fct = pd.merge(df_pendientes_actual_fct,
+#                                 df_pendientes_anterior_fct,
+#                                 on=['family_desc', 'clima', 'size'])
+#
+#     df_pendientes_fct['pendiente_real'] = np.abs(
+#         df_pendientes_fct['pendiente_anterior'] - df_pendientes_fct['pendiente_actual'])
+#
+#     df_pendientes_fct['info_type'] = 'pendientes'
+#     df_pendientes_fct = df_pendientes_fct.rename(columns={'pendiente_real': 'q'})
+#
+#
+#     df_pendientes_fct  = df_pendientes_fct.drop(columns=['pendiente_actual', 'pendiente_anterior'])
+#
+#     return df_pendientes_fct
 
 
 def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
@@ -298,8 +298,6 @@ def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file
 
     return df_devos
 
-###########################
-# Envios
 
 def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
 
@@ -327,7 +325,6 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
     df_envios = df_envios.rename(columns={'reference': 'q'})
 
     return df_envios
-
 
 
 def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None):
@@ -363,7 +360,6 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
     dic_clima = {'0.0': '0',
                  '1.0': '1',
-
                  '2.0': '2',
                  '3.0': '3'}
 
@@ -373,6 +369,8 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
                   on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
                   how='outer')
     df['q_real'] = df['q_real'].fillna(0)
+    # TODO: as type integer or np.round
+    df['q_real'] = df['q_estimates'].astype(int)
 
 
     if not os.path.isfile(file_save):
@@ -443,7 +441,7 @@ try:
 
     df_real = df_real.append(get_pendientes_real(date_start))
 except:
-    print('Error in getting pendientes compra')
+    print('Error in getting pendientes real')
     pass
 
 try:
@@ -480,5 +478,44 @@ else: # else it exists so append without writing the header
 merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None)
 
 
+def get_pendientes_real(date_start, pedidos_file=None, productos_file=None):
+    if pedidos_file is None:
+        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+    if productos_file is None:
+        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+    df_pedidos = pd.read_csv(pedidos_file, encoding="ISO-8859-1")
+
+    df_pedidos['date'] = pd.to_datetime(df_pedidos['date'])
+
+
+    df_pedidos['date_week'] = df_pedidos['date'] - pd.TimedeltaIndex(df_pedidos['date'].dt.dayofweek, unit='d')
+    df_pedidos['date_week'] = df_pedidos['date_week'].dt.date
+
+    df_pedidos = df_pedidos[df_pedidos['date_week'] == date_start.date()]
+
+    references_list = df_pedidos['reference'].to_list()
+    df_productos = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
+                                                 family=False, size=True, clima=True)
+
+    df_pedidos_fct = pd.merge(df_pedidos[['reference', 'family_desc', 'recibido']],
+                              df_productos,
+                              on='reference',
+                              how='left')
+
+
+
+    df_pendientes = df_pedidos_fct.groupby(['family_desc', 'clima', 'size']).agg({'recibido': 'sum'}).reset_index()
+
+
+
+    df_pendientes['info_type'] = 'pendientes'
+    df_pendientes = df_pendientes.rename(columns={'recibido': 'q'})
+
+
+    return df_pendientes
+
+
+df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
 
 # df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)

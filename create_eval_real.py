@@ -166,6 +166,45 @@ def get_compra_real(date_start_str):
 
     return df_compra
 
+
+def get_pendientes_real(date_start, pedidos_file=None, productos_file=None):
+    if pedidos_file is None:
+        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+    if productos_file is None:
+        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+    df_pedidos = pd.read_csv(pedidos_file, encoding="ISO-8859-1")
+
+    df_pedidos['date'] = pd.to_datetime(df_pedidos['date'])
+
+
+    df_pedidos['date_week'] = df_pedidos['date'] - pd.TimedeltaIndex(df_pedidos['date'].dt.dayofweek, unit='d')
+    df_pedidos['date_week'] = df_pedidos['date_week'].dt.date
+
+    df_pedidos = df_pedidos[df_pedidos['date_week'] == date_start.date()]
+
+    references_list = df_pedidos['reference'].to_list()
+    df_productos = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
+                                                 family=False, size=True, clima=True)
+
+    df_pedidos_fct = pd.merge(df_pedidos[['reference', 'family_desc', 'recibido']],
+                              df_productos,
+                              on='reference',
+                              how='left')
+
+
+
+    df_pendientes = df_pedidos_fct.groupby(['family_desc', 'clima', 'size']).agg({'recibido': 'sum'}).reset_index()
+
+
+
+    df_pendientes['info_type'] = 'pendientes'
+    df_pendientes = df_pendientes.rename(columns={'recibido': 'q'})
+
+
+    return df_pendientes
+
+
 #
 # def get_pendientes_real(date_actual, productos_file=None):
 #     # pendientes_file = ('/var/lib/lookiero/stock/Pendiente_llegar')
@@ -328,6 +367,7 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
 
 
 def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None):
+    print('Merging output of Stuart and real data')
     if file_estimates is None:
         file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
 
@@ -354,6 +394,11 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     df_estimates = df_estimates[df_estimates['clima'] != 'sin_clase']
     df_estimates = df_estimates[df_estimates['size'] != 'sin_clase']
 
+    # drop pedido
+    df_estimates = df_estimates[df_estimates['info_type'] != 'pedido']
+
+
+
     df_real = pd.read_csv(file_real)
 
     df_real = df_real.rename(columns={'q': 'q_real'})
@@ -363,14 +408,15 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
                  '2.0': '2',
                  '3.0': '3'}
 
-    df_real['clima'] = df_real['clima'].replace(dic_clima)
+    df_real['clima'] = df_real['clima'].astype('str').replace(dic_clima)
 
     df = pd.merge(df_estimates, df_real,
                   on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
                   how='outer')
     df['q_real'] = df['q_real'].fillna(0)
+
     # TODO: as type integer or np.round
-    df['q_real'] = df['q_estimates'].astype(int)
+    df['q_estimates'] = df['q_estimates'].fillna(0).astype(int)
 
 
     if not os.path.isfile(file_save):
@@ -379,6 +425,8 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     else:
         print('Appending to existing file ' + file_save)
         df.to_csv(file_save, mode='a', index=False, header=False)
+
+    return df
 
 
 
@@ -429,12 +477,12 @@ except:
     print('Error in getting real stock')
     pass
 
-try:
-    print('Getting compra real')
-    df_real = df_real.append(get_compra_real(date_start_str))
-except:
-    print('Error in getting real compra. Check if data is updated on the Google drive')
-    pass
+# try:
+#     print('Getting compra real')
+#     df_real = df_real.append(get_compra_real(date_start_str))
+# except:
+#     print('Error in getting real compra. Check if data is updated on the Google drive')
+#     pass
 
 try:
     print('Getting pendientes real')
@@ -478,44 +526,9 @@ else: # else it exists so append without writing the header
 merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None)
 
 
-def get_pendientes_real(date_start, pedidos_file=None, productos_file=None):
-    if pedidos_file is None:
-        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
-    if productos_file is None:
-        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-
-    df_pedidos = pd.read_csv(pedidos_file, encoding="ISO-8859-1")
-
-    df_pedidos['date'] = pd.to_datetime(df_pedidos['date'])
-
-
-    df_pedidos['date_week'] = df_pedidos['date'] - pd.TimedeltaIndex(df_pedidos['date'].dt.dayofweek, unit='d')
-    df_pedidos['date_week'] = df_pedidos['date_week'].dt.date
-
-    df_pedidos = df_pedidos[df_pedidos['date_week'] == date_start.date()]
-
-    references_list = df_pedidos['reference'].to_list()
-    df_productos = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
-                                                 family=False, size=True, clima=True)
-
-    df_pedidos_fct = pd.merge(df_pedidos[['reference', 'family_desc', 'recibido']],
-                              df_productos,
-                              on='reference',
-                              how='left')
 
 
 
-    df_pendientes = df_pedidos_fct.groupby(['family_desc', 'clima', 'size']).agg({'recibido': 'sum'}).reset_index()
-
-
-
-    df_pendientes['info_type'] = 'pendientes'
-    df_pendientes = df_pendientes.rename(columns={'recibido': 'q'})
-
-
-    return df_pendientes
-
-
-df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
+# df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
 
 # df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)

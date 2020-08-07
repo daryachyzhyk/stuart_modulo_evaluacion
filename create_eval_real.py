@@ -397,6 +397,9 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     # drop pedido
     df_estimates = df_estimates[df_estimates['info_type'] != 'pedido']
 
+    # TODO: remove clima not in [] such as 1.66
+    list_clima = [0., 0.5, 1., 1.5, 2., 2.5, 3.]
+    df_estimates = df_estimates[~df_estimates['clima'].isin(list_clima)]
 
 
     df_real = pd.read_csv(file_real)
@@ -582,6 +585,10 @@ if not os.path.isfile(os.path.join(path_save, name_save)):
    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
 else: # else it exists so append without writing the header
    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+
+
+
+
 
 
 merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None)

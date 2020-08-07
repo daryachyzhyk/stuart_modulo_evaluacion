@@ -418,7 +418,7 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     # TODO: as type integer or np.round
     df['q_estimates'] = df['q_estimates'].fillna(0).astype(int)
 
-    df['q_dif'] = df['q_real'] - df['q_estimates']
+    df['q_dif'] = df['q_estimates'] - df['q_real']
 
     size_dic = {'XXS': '0-XXS',
                 'XS': '1-XS',
@@ -522,11 +522,39 @@ except:
     print('Error in getting envios compra')
     pass
 
+# df_real1 = df_real.copy()
+
+
 
 # TODO: añadir distribucion de talla unica
+def apply_distribution_unq(df, file_distribution=None):
+    print('Applying size distribution to the UNQ size for not accessories')
+    if file_distribution is None:
 
-/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz
+        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
 
+    distr_osfa = pd.read_csv(file_distribution)
+    distr_osfa = distr_osfa.fillna(0)
+
+    list_family_unq = ['ABRIGO', 'BLUSA', 'CAMISETA', 'CARDIGAN', 'CHAQUETA', 'DENIM', 'FALDA', 'JERSEY', 'JUMPSUIT',
+                       'PANTALON', 'PARKA', 'SHORT', 'SUDADERA', 'TOP', 'TRENCH', 'VESTIDO']
+
+    df_unq = df[(df['family_desc'].isin(list_family_unq)) & (df['size'] == 'UNQ')]
+
+
+    df_unq = df_unq.rename(columns={'size': 'size_unq',
+                                                'q': 'q_unq'})
+    df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
+
+    df_osfa['q'] = df_osfa['q_unq'] * df_osfa['osfa']
+
+    # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
+    df = df.drop(df_unq.index)
+    df = df.append(df_osfa)
+    df = df.drop(columns=['size_unq', 'q_unq', 'osfa'])
+    return df
+
+df_real = apply_distribution_unq(df_real)
 # add dates
 df_real['date_week'] = date_start.date()
 # save

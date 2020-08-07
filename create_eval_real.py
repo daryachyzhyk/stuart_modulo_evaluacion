@@ -418,6 +418,19 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     # TODO: as type integer or np.round
     df['q_estimates'] = df['q_estimates'].fillna(0).astype(int)
 
+    df['q_dif'] = df['q_real'] - df['q_estimates']
+
+    size_dic = {'XXS': '0-XXS',
+                'XS': '1-XS',
+                'S': '2-S',
+                'M': '3-M',
+                'L': '4-L',
+                'XL': '5-XL',
+                'XXL': '6-XXL',
+                'XXXL': '7-XXXL',
+                'X4XL': '8-X4XL'}
+    df['size_desc'] = df['size'].replace(size_dic)
+
 
     if not os.path.isfile(file_save):
         print('Creating a new file ' + file_save)
@@ -509,6 +522,10 @@ except:
     print('Error in getting envios compra')
     pass
 
+
+# TODO: añadir distribucion de talla unica
+
+/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz
 
 # add dates
 df_real['date_week'] = date_start.date()

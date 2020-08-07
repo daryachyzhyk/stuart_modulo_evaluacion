@@ -532,7 +532,7 @@ def apply_distribution_unq(df, file_distribution=None):
     if file_distribution is None:
 
         file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
-
+    df = df.reset_index(drop=True)
     distr_osfa = pd.read_csv(file_distribution)
     distr_osfa = distr_osfa.fillna(0)
 
@@ -546,15 +546,31 @@ def apply_distribution_unq(df, file_distribution=None):
                                                 'q': 'q_unq'})
     df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
 
-    df_osfa['q'] = df_osfa['q_unq'] * df_osfa['osfa']
+    df_osfa['q_osfa'] = df_osfa['q_unq'] * df_osfa['osfa']
+    # df_osfa['q'] = df_osfa['q_unq'] + df_osfa['q_osfa']
 
     # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
+
     df = df.drop(df_unq.index)
-    df = df.append(df_osfa)
-    df = df.drop(columns=['size_unq', 'q_unq', 'osfa'])
+    # df2 = df[~df.index.isin(df_unq.index)]
+
+
+    df = pd.merge(df, df_osfa, on=['family_desc', 'clima', 'size', 'info_type'], how='left')
+
+    df['q_osfa'] = df['q_osfa'].fillna(0)
+    df['q'] = df['q'] + df['q_osfa']
+
+    # df = df.append(df_osfa)
+    df = df.drop(columns=['size_unq', 'q_unq', 'osfa', 'q_osfa'])
     return df
 
 df_real = apply_distribution_unq(df_real)
+
+
+# df_real3 = df_real2.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q': 'sum'}).reset_index()
+
+
+
 # add dates
 df_real['date_week'] = date_start.date()
 # save

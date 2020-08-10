@@ -85,3 +85,22 @@ ax = sns.heatmap(flights)
 
 
 
+# Update stock
+
+
+compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
+
+stock_path = ('/var/lib/lookiero/stock/snapshots')
+
+
+productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+
+file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
+
+file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
+
+file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
+
+pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')

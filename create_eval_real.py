@@ -592,6 +592,12 @@ else: # else it exists so append without writing the header
    df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
 
 
+if not os.path.isfile(os.path.join(path_save_date, name_save)):
+   df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=True)
+else:
+   df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=False)
+
+
 # # if file does not exist write header
 # if not os.path.isfile(os.path.join(path_save, name_save)):
 #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
@@ -602,11 +608,12 @@ else: # else it exists so append without writing the header
 
 
 
+file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
+file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
+df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
 
-merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None)
 
-
-
+aa = pd.read_csv(file_real)
 
 
 # df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)

@@ -85,8 +85,11 @@ def get_current_season(date_):
 
 ########################################
 # stock real
-def get_stock_real(date_start, date_end, stock_path, how='monday'):
+def get_stock_real(date_start, date_end, stock_path=None, how='monday'):
     # how='week_mean'
+
+    if stock_path is None:
+        stock_path = ('/var/lib/lookiero/stock/snapshots')
     df_stock_all = pd.DataFrame([])
 
     if how == 'week_mean':
@@ -446,6 +449,43 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
 
 
+def apply_distribution_unq(df, file_distribution=None):
+    print('Applying size distribution to the UNQ size for not accessories')
+    if file_distribution is None:
+
+        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
+    df = df.reset_index(drop=True)
+    distr_osfa = pd.read_csv(file_distribution)
+    distr_osfa = distr_osfa.fillna(0)
+
+    list_family_unq = ['ABRIGO', 'BLUSA', 'CAMISETA', 'CARDIGAN', 'CHAQUETA', 'DENIM', 'FALDA', 'JERSEY', 'JUMPSUIT',
+                       'PANTALON', 'PARKA', 'SHORT', 'SUDADERA', 'TOP', 'TRENCH', 'VESTIDO']
+
+    df_unq = df[(df['family_desc'].isin(list_family_unq)) & (df['size'] == 'UNQ')]
+
+
+    df_unq = df_unq.rename(columns={'size': 'size_unq',
+                                                'q': 'q_unq'})
+    df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
+
+    df_osfa['q_osfa'] = df_osfa['q_unq'] * df_osfa['osfa']
+    # df_osfa['q'] = df_osfa['q_unq'] + df_osfa['q_osfa']
+
+    # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
+
+    df = df.drop(df_unq.index)
+    # df2 = df[~df.index.isin(df_unq.index)]
+
+
+    df = pd.merge(df, df_osfa, on=['family_desc', 'clima', 'size', 'info_type'], how='left')
+
+    df['q_osfa'] = df['q_osfa'].fillna(0)
+    df['q'] = df['q'] + df['q_osfa']
+
+    # df = df.append(df_osfa)
+    df = df.drop(columns=['size_unq', 'q_unq', 'osfa', 'q_osfa'])
+    return df
+
 ####################################################################
 # run
 
@@ -478,7 +518,7 @@ stock_path = ('/var/lib/lookiero/stock/snapshots')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
 
-path_save = ('/var/lib/lookiero/stock/stock_tool')
+path_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 
 
 #########################################################
@@ -529,43 +569,6 @@ except:
 
 
 
-# TODO: añadir distribucion de talla unica
-def apply_distribution_unq(df, file_distribution=None):
-    print('Applying size distribution to the UNQ size for not accessories')
-    if file_distribution is None:
-
-        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
-    df = df.reset_index(drop=True)
-    distr_osfa = pd.read_csv(file_distribution)
-    distr_osfa = distr_osfa.fillna(0)
-
-    list_family_unq = ['ABRIGO', 'BLUSA', 'CAMISETA', 'CARDIGAN', 'CHAQUETA', 'DENIM', 'FALDA', 'JERSEY', 'JUMPSUIT',
-                       'PANTALON', 'PARKA', 'SHORT', 'SUDADERA', 'TOP', 'TRENCH', 'VESTIDO']
-
-    df_unq = df[(df['family_desc'].isin(list_family_unq)) & (df['size'] == 'UNQ')]
-
-
-    df_unq = df_unq.rename(columns={'size': 'size_unq',
-                                                'q': 'q_unq'})
-    df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
-
-    df_osfa['q_osfa'] = df_osfa['q_unq'] * df_osfa['osfa']
-    # df_osfa['q'] = df_osfa['q_unq'] + df_osfa['q_osfa']
-
-    # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
-
-    df = df.drop(df_unq.index)
-    # df2 = df[~df.index.isin(df_unq.index)]
-
-
-    df = pd.merge(df, df_osfa, on=['family_desc', 'clima', 'size', 'info_type'], how='left')
-
-    df['q_osfa'] = df['q_osfa'].fillna(0)
-    df['q'] = df['q'] + df['q_osfa']
-
-    # df = df.append(df_osfa)
-    df = df.drop(columns=['size_unq', 'q_unq', 'osfa', 'q_osfa'])
-    return df
 
 df_real = apply_distribution_unq(df_real)
 
@@ -578,13 +581,22 @@ df_real = apply_distribution_unq(df_real)
 df_real['date_week'] = date_start.date()
 # save
 name_save = 'eval_real_data.csv.gz'
+name_save_date = 'eval_real_data_' + date_start_str + '.csv.gz'
+
+path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 # df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False) # , header=False
 
-# if file does not exist write header
-if not os.path.isfile(os.path.join(path_save, name_save)):
-   df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
+if not os.path.isfile(os.path.join(path_save_date, name_save_date)):
+   df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=True)
 else: # else it exists so append without writing the header
-   df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+   df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
+
+
+# # if file does not exist write header
+# if not os.path.isfile(os.path.join(path_save, name_save)):
+#    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
+# else: # else it exists so append without writing the header
+#    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
 
 
 

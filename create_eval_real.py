@@ -369,6 +369,45 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
     return df_envios
 
 
+
+def apply_distribution_unq(df, file_distribution=None):
+    print('Applying size distribution to the UNQ size for not accessories')
+    if file_distribution is None:
+
+        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
+    df = df.reset_index(drop=True)
+    distr_osfa = pd.read_csv(file_distribution)
+    distr_osfa = distr_osfa.fillna(0)
+
+    list_family_unq = ['ABRIGO', 'BLUSA', 'CAMISETA', 'CARDIGAN', 'CHAQUETA', 'DENIM', 'FALDA', 'JERSEY', 'JUMPSUIT',
+                       'PANTALON', 'PARKA', 'SHORT', 'SUDADERA', 'TOP', 'TRENCH', 'VESTIDO']
+
+    df_unq = df[(df['family_desc'].isin(list_family_unq)) & (df['size'] == 'UNQ')]
+
+
+    df_unq = df_unq.rename(columns={'size': 'size_unq',
+                                                'q': 'q_unq'})
+    df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
+
+    df_osfa['q_osfa'] = df_osfa['q_unq'] * df_osfa['osfa']
+    # df_osfa['q'] = df_osfa['q_unq'] + df_osfa['q_osfa']
+
+    # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
+
+    df = df.drop(df_unq.index)
+    # df2 = df[~df.index.isin(df_unq.index)]
+
+
+    df = pd.merge(df, df_osfa, on=['family_desc', 'clima', 'size', 'info_type'], how='left')
+
+    df['q_osfa'] = df['q_osfa'].fillna(0)
+    df['q'] = df['q'] + df['q_osfa']
+
+    # df = df.append(df_osfa)
+    df = df.drop(columns=['size_unq', 'q_unq', 'osfa', 'q_osfa'])
+    return df
+
+
 def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None):
     print('Merging output of Stuart and real data')
     if file_estimates is None:
@@ -449,65 +488,32 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
 
 
-def apply_distribution_unq(df, file_distribution=None):
-    print('Applying size distribution to the UNQ size for not accessories')
-    if file_distribution is None:
-
-        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
-    df = df.reset_index(drop=True)
-    distr_osfa = pd.read_csv(file_distribution)
-    distr_osfa = distr_osfa.fillna(0)
-
-    list_family_unq = ['ABRIGO', 'BLUSA', 'CAMISETA', 'CARDIGAN', 'CHAQUETA', 'DENIM', 'FALDA', 'JERSEY', 'JUMPSUIT',
-                       'PANTALON', 'PARKA', 'SHORT', 'SUDADERA', 'TOP', 'TRENCH', 'VESTIDO']
-
-    df_unq = df[(df['family_desc'].isin(list_family_unq)) & (df['size'] == 'UNQ')]
-
-
-    df_unq = df_unq.rename(columns={'size': 'size_unq',
-                                                'q': 'q_unq'})
-    df_osfa = pd.merge(df_unq, distr_osfa, on='family_desc')
-
-    df_osfa['q_osfa'] = df_osfa['q_unq'] * df_osfa['osfa']
-    # df_osfa['q'] = df_osfa['q_unq'] + df_osfa['q_osfa']
-
-    # df_real[(df_real['family_desc'].isin(list_family_unq)) & (df_real['size'] == 'UNQ')] = df_real_osfa
-
-    df = df.drop(df_unq.index)
-    # df2 = df[~df.index.isin(df_unq.index)]
-
-
-    df = pd.merge(df, df_osfa, on=['family_desc', 'clima', 'size', 'info_type'], how='left')
-
-    df['q_osfa'] = df['q_osfa'].fillna(0)
-    df['q'] = df['q'] + df['q_osfa']
-
-    # df = df.append(df_osfa)
-    df = df.drop(columns=['size_unq', 'q_unq', 'osfa', 'q_osfa'])
-    return df
-
-####################################################################
+####################################################################################################################
 # run
 
-####################################################################################################################
-# Date to analyze
-day_today = datetime.datetime.now()
 # TODO: eliminate test
 
 # day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+def run_eval_estimates_real(date_start='today', stock_path=None, ):
 
+    if date_start == 'today':
+        day_today = datetime.datetime.now()
 
-date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
+        date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
+    elif isinstance(date_start, datetime.datetime):
+        pass
+    else:
+        print('Error: date_start should be datetime')
 
-date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
-date_end = date_start + datetime.timedelta(days=6)
+    date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
+    date_end = date_start + datetime.timedelta(days=6)
 
-date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
+    date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
-
-# fecha_stock_actual_start_str = '2020-07-13'
+    print('Getting real data for ' + date_start_str + ' - ' + date_end_str)
+    # fecha_stock_actual_start_str = '2020-07-13'
 
 
 ######################################################################################3

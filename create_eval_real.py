@@ -85,7 +85,7 @@ def get_current_season(date_):
 
 ########################################
 # stock real
-def get_stock_real(date_start, date_end, stock_path, how='monday'):
+def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday'):
     # how='week_mean'
 
     # if stock_path is None:
@@ -408,16 +408,16 @@ def apply_distribution_unq(df, file_distribution):
     return df
 
 
-def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=None, file_save=None):
+def merge_eval_estimates_real(date_start_str, file_estimates, file_real, file_save):
     print('Merging output of Stuart and real data')
-    if file_estimates is None:
-        file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
-
-    if file_real is None:
-        file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
-
-    if file_save is None:
-        file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
+    # if file_estimates is None:
+    #     file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
+    #
+    # if file_real is None:
+    #     file_real = ('/var/lib/lookiero/stock/stock_tool/eval_real_data.csv.gz')
+    #
+    # if file_save is None:
+    #     file_save = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
 
     df_estimates_raw = pd.read_csv(file_estimates)
 
@@ -447,7 +447,7 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
     df_real = pd.read_csv(file_real)
 
     df_real = df_real.rename(columns={'q': 'q_real'})
-
+    # df_real['q_real'] = df_real['q_real'].astype(float)
     dic_clima = {'0.0': '0',
                  '1.0': '1',
                  '2.0': '2',
@@ -462,6 +462,9 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 
     # TODO: as type integer or np.round
     df['q_estimates'] = df['q_estimates'].fillna(0).astype(int)
+    # df['q_real'] = df['q_real'].astype((float))
+
+
 
     df['q_dif'] = df['q_estimates'] - df['q_real']
 
@@ -491,25 +494,19 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 ####################################################################################################################
 # run
 
-# TODO: eliminate test
-
-# day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-date_start = datetime.datetime(2020, 8, 3)
-
-# path
-
 
 
 
 def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=None, pedidos_file=None,
-                            venta_file=None, file_distribution_osfa=None, path_save=None,
-                            path_save_weekly=None):
+                            venta_file=None, file_distribution_osfa=None, file_estimates=None, path_save=None,
+                            path_save_date=None):
 
     if date_start == 'today':
         day_today = datetime.datetime.now()
 
         date_start = day_today - datetime.timedelta(days = 7 + day_today.weekday())
     elif isinstance(date_start, datetime.datetime):
+        print('datetime correct')
         pass
     else:
         print('Error: date_start should be datetime')
@@ -536,8 +533,8 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
         productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
     if path_save is None:
         path_save = ('/var/lib/lookiero/stock/stock_tool')
-    if path_save_weekly is None:
-        path_save_weekly = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+    if path_save_date is None:
+        path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
     if pedidos_file is None:
         pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
     if venta_file is None:
@@ -546,6 +543,8 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     if file_distribution_osfa is None:
 
         file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
+    if file_estimates is None:
+        file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
 
     #########################################################
 
@@ -553,7 +552,7 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     df_real = pd.DataFrame([])
     try:
         print('Getting stock real for the dates: ' + date_start_str + ' - ' + date_end_str)
-        df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
+        df_stock = get_stock_real(date_start, date_end, stock_path, productos_file, how='monday')
         df_real = df_real.append(df_stock)
     except:
         print('Error in getting real stock')
@@ -576,52 +575,49 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
     try:
         print('Getting devos real')
-
         df_real = df_real.append(get_devos_real(date_start_str, date_end_str, venta_file, productos_file))
     except:
         print('Error in getting devos compra')
         pass
 
-
     try:
         print('Getting envios real')
-
         df_real = df_real.append(get_envios_real(date_start_str, date_end_str, venta_file, productos_file))
     except:
         print('Error in getting envios compra')
         pass
 
-    # df_real1 = df_real.copy()
-
-
-
 
     df_real = apply_distribution_unq(df_real, file_distribution_osfa)
 
-
-    # df_real3 = df_real2.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q': 'sum'}).reset_index()
-
-
-
     # add dates
     df_real['date_week'] = date_start.date()
+
+
+
+
+
     # save
     name_save = 'eval_real_data.csv.gz'
     name_save_date = 'eval_real_data_' + date_start_str + '.csv.gz'
+    name_save_merged = 'eval_estimates_real.csv.gz'
 
-    path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+    # path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
     # df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False) # , header=False
 
-    if not os.path.isfile(os.path.join(path_save_date, name_save_date)):
-       df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=True)
-    else: # else it exists so append without writing the header
-       df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
+    # save historical data with date in the file name
 
+    df_real.to_csv(os.path.join(path_save_date, name_save_date), index=False, header=True)
+    # if not os.path.isfile(os.path.join(path_save_date, name_save_date)):
+    #    df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=True)
+    # else: # else it exists so append without writing the header
+    #    df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
 
-    if not os.path.isfile(os.path.join(path_save_date, name_save)):
-       df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=True)
+    # save appended data
+    if not os.path.isfile(os.path.join(path_save, name_save)):
+       df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
     else:
-       df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=False)
+       df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
 
 
     # # if file does not exist write header
@@ -629,17 +625,35 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
     # else: # else it exists so append without writing the header
     #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+    file_real = os.path.join(path_save_date, name_save_date)
+    file_merged_save = os.path.join(path_save, name_save_merged)
+    df_merged = merge_eval_estimates_real(date_start_str, file_estimates, file_real=file_real, file_save=file_merged_save)
 
 
 
 
 
-file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
-file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
-df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
 
 
-aa = pd.read_csv(file_real)
+
+# TODO: eliminate test
+
+# day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+date_start = datetime.datetime(2020, 7, 27)
+
+# path
+
+run_eval_estimates_real(date_start=date_start)
+run_eval_estimates_real(date_start='today')
+
+
+#
+# file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
+# file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
+# df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
+
+
+# aa = pd.read_csv(file_real)
 
 
 # df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)

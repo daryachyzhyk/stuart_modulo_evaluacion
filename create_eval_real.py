@@ -85,11 +85,11 @@ def get_current_season(date_):
 
 ########################################
 # stock real
-def get_stock_real(date_start, date_end, stock_path=None, how='monday'):
+def get_stock_real(date_start, date_end, stock_path, how='monday'):
     # how='week_mean'
 
-    if stock_path is None:
-        stock_path = ('/var/lib/lookiero/stock/snapshots')
+    # if stock_path is None:
+    #     stock_path = ('/var/lib/lookiero/stock/snapshots')
     df_stock_all = pd.DataFrame([])
 
     if how == 'week_mean':
@@ -170,11 +170,11 @@ def get_compra_real(date_start_str):
     return df_compra
 
 
-def get_pendientes_real(date_start, pedidos_file=None, productos_file=None):
-    if pedidos_file is None:
-        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
-    if productos_file is None:
-        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+def get_pendientes_real(date_start, pedidos_file, productos_file):
+    # if pedidos_file is None:
+    #     pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+    # if productos_file is None:
+    #     productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
     df_pedidos = pd.read_csv(pedidos_file, encoding="ISO-8859-1")
 
@@ -311,10 +311,10 @@ def get_pendientes_real(date_start, pedidos_file=None, productos_file=None):
 #     return df_pendientes_fct
 
 
-def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
+def get_devos_real(date_start_str, date_end_str, venta_file, productos_file):
 
-    if venta_file is None:
-        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+    # if venta_file is None:
+    #     venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
 
     query_devos_text = 'date_terminated >= @date_start_str and date_terminated <= @date_end_str and purchased == 0'
 
@@ -341,10 +341,10 @@ def get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file
     return df_devos
 
 
-def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_file=None):
+def get_envios_real(date_start_str, date_end_str, venta_file, productos_file):
 
-    if venta_file is None:
-        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+    # if venta_file is None:
+    #     venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
 
     query_envios_text = 'date_ps_done >= @date_start_str and date_ps_done <= @date_end_str'
 
@@ -370,11 +370,11 @@ def get_envios_real(date_start_str, date_end_str, venta_file=None, productos_fil
 
 
 
-def apply_distribution_unq(df, file_distribution=None):
+def apply_distribution_unq(df, file_distribution):
     print('Applying size distribution to the UNQ size for not accessories')
-    if file_distribution is None:
-
-        file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
+    # if file_distribution is None:
+    #
+    #     file_distribution = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
     df = df.reset_index(drop=True)
     distr_osfa = pd.read_csv(file_distribution)
     distr_osfa = distr_osfa.fillna(0)
@@ -494,9 +494,16 @@ def merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=Non
 # TODO: eliminate test
 
 # day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+date_start = datetime.datetime(2020, 8, 3)
+
+# path
 
 
-def run_eval_estimates_real(date_start='today', stock_path=None, ):
+
+
+def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=None, pedidos_file=None,
+                            venta_file=None, file_distribution_osfa=None, path_save=None,
+                            path_save_weekly=None):
 
     if date_start == 'today':
         day_today = datetime.datetime.now()
@@ -507,6 +514,8 @@ def run_eval_estimates_real(date_start='today', stock_path=None, ):
     else:
         print('Error: date_start should be datetime')
 
+
+
     date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
     date_end = date_start + datetime.timedelta(days=6)
 
@@ -516,99 +525,110 @@ def run_eval_estimates_real(date_start='today', stock_path=None, ):
     # fecha_stock_actual_start_str = '2020-07-13'
 
 
-######################################################################################3
-
-# path
-stock_path = ('/var/lib/lookiero/stock/snapshots')
-
-productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-
-
-path_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
-
-
-#########################################################
-
-
-df_real = pd.DataFrame([])
-try:
-    print('Getting stock real for the dates: ' + date_start_str + ' - ' + date_end_str)
-    df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
-    df_real = df_real.append(df_stock)
-except:
-    print('Error in getting real stock')
-    pass
-
-# try:
-#     print('Getting compra real')
-#     df_real = df_real.append(get_compra_real(date_start_str))
-# except:
-#     print('Error in getting real compra. Check if data is updated on the Google drive')
-#     pass
-
-try:
-    print('Getting pendientes real')
-
-    df_real = df_real.append(get_pendientes_real(date_start))
-except:
-    print('Error in getting pendientes real')
-    pass
-
-try:
-    print('Getting devos real')
-
-    df_real = df_real.append(get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None))
-except:
-    print('Error in getting devos compra')
-    pass
-
-
-try:
-    print('Getting envios real')
-
-    df_real = df_real.append(get_envios_real(date_start_str, date_end_str, venta_file=None, productos_file=None))
-except:
-    print('Error in getting envios compra')
-    pass
-
-# df_real1 = df_real.copy()
 
 
 
+    ######################################################################################3
+    # path
+    if stock_path is None:
+        stock_path = ('/var/lib/lookiero/stock/snapshots')
+    if productos_file is None:
+        productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+    if path_save is None:
+        path_save = ('/var/lib/lookiero/stock/stock_tool')
+    if path_save_weekly is None:
+        path_save_weekly = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+    if pedidos_file is None:
+        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+    if venta_file is None:
+        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
 
-df_real = apply_distribution_unq(df_real)
+    if file_distribution_osfa is None:
 
+        file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
 
-# df_real3 = df_real2.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q': 'sum'}).reset_index()
-
-
-
-# add dates
-df_real['date_week'] = date_start.date()
-# save
-name_save = 'eval_real_data.csv.gz'
-name_save_date = 'eval_real_data_' + date_start_str + '.csv.gz'
-
-path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
-# df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False) # , header=False
-
-if not os.path.isfile(os.path.join(path_save_date, name_save_date)):
-   df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=True)
-else: # else it exists so append without writing the header
-   df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
-
-
-if not os.path.isfile(os.path.join(path_save_date, name_save)):
-   df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=True)
-else:
-   df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=False)
+    #########################################################
 
 
-# # if file does not exist write header
-# if not os.path.isfile(os.path.join(path_save, name_save)):
-#    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
-# else: # else it exists so append without writing the header
-#    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+    df_real = pd.DataFrame([])
+    try:
+        print('Getting stock real for the dates: ' + date_start_str + ' - ' + date_end_str)
+        df_stock = get_stock_real(date_start, date_end, stock_path, how='monday')
+        df_real = df_real.append(df_stock)
+    except:
+        print('Error in getting real stock')
+        pass
+
+    # try:
+    #     print('Getting compra real')
+    #     df_real = df_real.append(get_compra_real(date_start_str))
+    # except:
+    #     print('Error in getting real compra. Check if data is updated on the Google drive')
+    #     pass
+
+    try:
+        print('Getting pendientes real')
+
+        df_real = df_real.append(get_pendientes_real(date_start, pedidos_file, productos_file))
+    except:
+        print('Error in getting pendientes real')
+        pass
+
+    try:
+        print('Getting devos real')
+
+        df_real = df_real.append(get_devos_real(date_start_str, date_end_str, venta_file, productos_file))
+    except:
+        print('Error in getting devos compra')
+        pass
+
+
+    try:
+        print('Getting envios real')
+
+        df_real = df_real.append(get_envios_real(date_start_str, date_end_str, venta_file, productos_file))
+    except:
+        print('Error in getting envios compra')
+        pass
+
+    # df_real1 = df_real.copy()
+
+
+
+
+    df_real = apply_distribution_unq(df_real, file_distribution_osfa)
+
+
+    # df_real3 = df_real2.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q': 'sum'}).reset_index()
+
+
+
+    # add dates
+    df_real['date_week'] = date_start.date()
+    # save
+    name_save = 'eval_real_data.csv.gz'
+    name_save_date = 'eval_real_data_' + date_start_str + '.csv.gz'
+
+    path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+    # df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False) # , header=False
+
+    if not os.path.isfile(os.path.join(path_save_date, name_save_date)):
+       df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=True)
+    else: # else it exists so append without writing the header
+       df_real.to_csv(os.path.join(path_save_date, name_save_date), mode='a', index=False, header=False)
+
+
+    if not os.path.isfile(os.path.join(path_save_date, name_save)):
+       df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=True)
+    else:
+       df_real.to_csv(os.path.join(path_save_date, name_save), mode='a', index=False, header=False)
+
+
+    # # if file does not exist write header
+    # if not os.path.isfile(os.path.join(path_save, name_save)):
+    #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
+    # else: # else it exists so append without writing the header
+    #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
 
 
 

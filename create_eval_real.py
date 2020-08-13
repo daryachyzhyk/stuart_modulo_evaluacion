@@ -643,8 +643,12 @@ date_start = datetime.datetime(2020, 7, 27)
 
 # path
 
-run_eval_estimates_real(date_start=date_start)
-run_eval_estimates_real(date_start='today')
+path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
+path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
+
+
+run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 
 
 #

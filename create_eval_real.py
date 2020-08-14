@@ -631,35 +631,36 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
 
 
+if __name__ == "__main__":
 
 
 
 
 
-# TODO: eliminate test
+    # TODO: eliminate test
 
-# day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-date_start = datetime.datetime(2020, 7, 27)
+    # day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    date_start = datetime.datetime(2020, 7, 27)
 
-# path
+    # path
 
-path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
-path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
-
-
-run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
+    path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
+    path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
 
 
-#
-# file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
-# file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
-# df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 
 
-# aa = pd.read_csv(file_real)
+    #
+    # file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
+    # file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
+    # df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
 
 
-# df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
+    # aa = pd.read_csv(file_real)
 
-# df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)
+
+    # df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
+
+    # df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)

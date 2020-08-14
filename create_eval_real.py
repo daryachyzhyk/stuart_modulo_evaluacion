@@ -1,7 +1,6 @@
 '''
 Script to create the table of the real data last week:
 * stock
-* compra
 * sent, envios
 * returns, devos
 * pendientes recibidos
@@ -67,11 +66,15 @@ def get_fam_size_clima(references, file=None, drop_duplicates=True, family=True,
 
 
 def get_current_season(date_):
+    '''
+    Return the season of the indicates date
+    :param date_: date.time
+        date
+    :return: int
+        number of the season
+    '''
     if isinstance(date_, datetime.datetime):
         date_fisrt_season = datetime.datetime(2016, 1, 1)
-
-        # delta_month = (date_.year - date_fisrt_season.year) * 12 + date_.month - date_fisrt_season.month
-
         delta_season = (date_.year - date_fisrt_season.year) * 2
         if date_.month <= 6:
             season = delta_season + 1
@@ -632,35 +635,14 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
 
 if __name__ == "__main__":
-
-
-
-
-
-    # TODO: eliminate test
-
-    # day_today = day_today - datetime.timedelta(days = 21) ######### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    date_start = datetime.datetime(2020, 7, 27)
-
     # path
 
     path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
     path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
 
+    # start with last week of july and first week of august
+    date_start = datetime.datetime(2020, 7, 27)
 
     run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
     run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 
-
-    #
-    # file_real = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_real_data.csv.gz')
-    # file_save = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history/eval_estimates_real.csv.gz')
-    # df_merged = merge_eval_estimates_real(date_start_str, file_estimates=None, file_real=file_real, file_save=file_save)
-
-
-    # aa = pd.read_csv(file_real)
-
-
-    # df_pendientes_1 = get_pendientes_real(date_start, pedidos_file=None, productos_file=None)
-
-    # df_devos_real = get_devos_real(date_start_str, date_end_str, venta_file=None, productos_file=None)

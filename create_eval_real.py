@@ -15,15 +15,6 @@ import glob
 import pandas as pd
 import numpy as np
 import datetime
-from google_drive_downloader import GoogleDriveDownloader as gdd
-
-# TODO: make a google file download
-
-#
-# file_id = "1cFS436nfXP1XV5aBeauPbTe6WZF_jFZ3fbyi5H3Qd7M"
-# gdd.download_file_from_google_drive(file_id=file_id,
-#                                     dest_path='/var/lib/lookiero/stock/stock_tool/kpi',
-#                                     unzip=True)
 
 
 def get_fam_size_clima(references, file=None, drop_duplicates=True, family=True, size=True, clima=True):
@@ -86,19 +77,28 @@ def get_current_season(date_):
     return season
 
 
-########################################
-# stock real
 def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday'):
-    # how='week_mean'
+    '''
+    Extract stock for the indicated window of time from the snapshots
 
-    # if stock_path is None:
-    #     stock_path = ('/var/lib/lookiero/stock/snapshots')
+    :param date_start: datetime
+        start of the period of interest
+    :param date_end: datetime
+        end of the period of interest
+    :param stock_path: str
+        path to the snapshots folder
+    :param productos_file: str
+    path to the product file
+    :param how: str, default 'monday'
+        if 'monday', take snapshots just for the one day, if 'week_mean': take mean for the week
+    :return: pandas.DataFrame
+        real stock
+    '''
+
     df_stock_all = pd.DataFrame([])
 
     if how == 'week_mean':
         delta_date_stock = date_end - date_start
-
-
 
         for i in range(delta_date_stock.days + 1):
             day = date_start + datetime.timedelta(days=i)
@@ -137,40 +137,6 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
     df_stock['info_type'] = 'stock'
     df_stock = df_stock.rename(columns={'real_stock': 'q'})
     return df_stock
-
-
-def get_compra_real(date_start_str):
-    # TODO: download compra file from Google Drive
-
-    # compra realizada
-    compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
-
-    # link between week and compra date
-    compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
-
-    query_compra_date_text = 'week == @date_start_str'
-    df_date_compra = pd.read_csv(compra_dates_file).query(query_compra_date_text)
-    if df_date_compra.empty == False:
-        date_compra_str = df_date_compra['date_compra'].values[0]
-
-        query_compra_reference_text = 'date_compra == @date_compra_str'
-        df_compra_raw = pd.read_csv(compra_file,
-                                    usecols=['date_compra', 'reference', 'cantidad_pedida']
-                                    ).query(query_compra_reference_text)
-
-        list_references_compra = df_compra_raw["reference"].to_list()
-        df_compra_products = get_fam_size_clima(list_references_compra, productos_file, drop_duplicates=True)
-
-        df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
-        df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
-
-        df_compra['info_type'] = 'pedido'
-        df_compra = df_compra.rename(columns={'cantidad_pedida': 'q'})
-
-    else:
-        print('There is no date ' + date_start_str + '. Please update the data here: ' + compra_dates_file)
-
-    return df_compra
 
 
 def get_pendientes_real(date_start, pedidos_file, productos_file):
@@ -534,21 +500,18 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
         stock_path = ('/var/lib/lookiero/stock/snapshots')
     if productos_file is None:
         productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-    if path_save is None:
-        path_save = ('/var/lib/lookiero/stock/stock_tool')
-    if path_save_date is None:
-        path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
     if pedidos_file is None:
         pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
     if venta_file is None:
         venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
-
     if file_distribution_osfa is None:
-
         file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
     if file_estimates is None:
         file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
-
+    if path_save is None:
+        path_save = ('/var/lib/lookiero/stock/stock_tool')
+    if path_save_date is None:
+        path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
     #########################################################
 
 

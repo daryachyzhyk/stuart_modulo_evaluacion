@@ -56,14 +56,14 @@ def get_fam_size_clima(references, file=None, drop_duplicates=True, family=True,
 
 
 
-def get_compra_real(date_start_str):
+def get_compra_real(date_start_str, compra_file, compra_dates_file, productos_file):
     # TODO: download compra file from Google Drive
 
     # compra realizada
-    compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
+    # compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
 
     # link between week and compra date
-    compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
+    # compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
 
     query_compra_date_text = 'week == @date_start_str'
     df_date_compra = pd.read_csv(compra_dates_file).query(query_compra_date_text)
@@ -89,3 +89,18 @@ def get_compra_real(date_start_str):
 
     return df_compra
 
+
+
+
+# run
+
+# compra realizada
+compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
+
+# link between week and compra date
+compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
+productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+
+date_start_str = '2020'
+get_compra_real(date_start_str, compra_file, compra_dates_file, productos_file)

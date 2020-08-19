@@ -503,7 +503,8 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     if pedidos_file is None:
         pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
     if venta_file is None:
-        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+        # venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
+        venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda.csv.gz')
     if file_distribution_osfa is None:
         file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
     if file_estimates is None:

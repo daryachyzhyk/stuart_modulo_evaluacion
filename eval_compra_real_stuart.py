@@ -99,6 +99,7 @@ compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_q
 
 # link between week and compra date
 compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
+compra_date_stuart_id = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
 

@@ -105,7 +105,7 @@ def get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file):
     return df_stuart
 
 
-def merge_compra_real_stuart(df_compra_real, df_compra_stuart):
+def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, file_save_date=None):
 
     # drop 'sin_clase'
     df_compra_stuart = df_compra_stuart[df_compra_stuart['clima'] != 'sin_clase']
@@ -129,6 +129,25 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart):
                   df_compra_real,
                   on=['family_desc', 'clima', 'size'],
                   how='outer')
+    df['recomendacion'] = df['recomendacion'].fillna(0)
+    df['compra_real'] = df['compra_real'].fillna(0)
+
+    df['date_compra'] = date_compra_str
+
+    if file_save is not None:
+
+        if not os.path.isfile(file_save):
+            print('Creating a new file ' + file_save)
+            df.to_csv(file_save, mode='a', index=False, header=True)
+        else:
+            print('Appending to existing file ' + file_save)
+            df.to_csv(file_save, mode='a', index=False, header=False)
+
+    if file_save_date is not None:
+        df.to_csv(file_save_date, index=False, header=True)
+
+
+
     return df
 
 
@@ -138,6 +157,12 @@ date_stuart_str = '2020-08-03'
 compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1.csv')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
+path_save = ('/var/lib/lookiero/stock/stock_tool')
+path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+
+file_save = os.path.join(path_save, 'eval_estimates_real_compra.csv.gz')
+file_save_date = os.path.join(path_save_date, 'eval_estimates_real_compra_' + date_compra_str + '.csv.gz')
+
 # TODO: correct  stuart date
 compra_date_stuart_id_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
 
@@ -145,10 +170,14 @@ df_compra_real = get_compra_real(date_compra_str, compra_file, productos_file)
 
 df_compra_stuart = get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file)
 
-df = merge_compra_real_stuart(df_compra_real, df_compra_stuart)
+df = merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save, file_save_date)
 
 
-aa = df_compra_stuart[df_compra_stuart['clima'].isin(['sin_clase','no_definido'])]
+
+
+
+
+# aa = df_compra_stuart[df_compra_stuart['clima'].isin(['sin_clase','no_definido'])]
 
 
 #
@@ -187,20 +216,20 @@ aa = df_compra_stuart[df_compra_stuart['clima'].isin(['sin_clase','no_definido']
 
 
 
-
-# run
-
-# compra realizada
-compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
-
-# link between week and compra date
-compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
-compra_date_stuart_id = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
-productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-
-
-date_compra_str = '2020-07-22'
-get_compra_real(date_compra_str, compra_file, compra_dates_file, productos_file)
-
-
-# date_compra	id_stuart	date_stuart
+#
+# # run
+#
+# # compra realizada
+# compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
+#
+# # link between week and compra date
+# compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
+# compra_date_stuart_id = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
+# productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+#
+#
+# date_compra_str = '2020-07-22'
+# get_compra_real(date_compra_str, compra_file, compra_dates_file, productos_file)
+#
+#
+# # date_compra	id_stuart	date_stuart

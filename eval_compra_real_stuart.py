@@ -80,7 +80,7 @@ def get_compra_real(date_compra_str, compra_file, productos_file):
     df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
     df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
 
-    df_compra['info_type'] = 'pedido'
+    # df_compra['info_type'] = 'pedido'
     df_compra = df_compra.rename(columns={'cantidad_pedida': 'compra_real'})
 
     # else:
@@ -100,17 +100,55 @@ def get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file):
     df_raw = pd.read_csv(stuart_file)
     df_raw[['family_desc', 'clima']] = df_raw['family_desc-clima'].str.split("-", expand=True)
     df_raw[['temp', 'size']] = df_raw['clase'].str.split("-", expand=True)
-    df_raw = df_raw.rename({'clase': 'size_desc'})
+    df_raw = df_raw.rename(columns={'clase': 'size_desc'})
     df_stuart = df_raw[['family_desc', 'clima', 'size', 'recomendacion', 'size_desc']]
+    return df_stuart
+
+
+def merge_compra_real_stuart(df_compra_real, df_compra_stuart):
+
+    # drop 'sin_clase'
+    df_compra_stuart = df_compra_stuart[df_compra_stuart['clima'] != 'sin_clase']
+    df_compra_stuart = df_compra_stuart[df_compra_stuart['size'] != 'sin_clase']
+
+
+
+    # TODO: remove clima not in [] such as 1.66
+    list_clima = [0., 0.5, 1., 1.5, 2., 2.5, 3.]
+    df_compra_stuart = df_compra_stuart[~df_compra_stuart['clima'].isin(list_clima)]
+
+
+    dic_clima = {'0.0': '0',
+                 '1.0': '1',
+                 '2.0': '2',
+                 '3.0': '3'}
+
+    df_compra_real['clima'] = df_compra_real['clima'].astype('str').replace(dic_clima)
+
+    df = pd.merge(df_compra_stuart,
+                  df_compra_real,
+                  on=['family_desc', 'clima', 'size'],
+                  how='outer')
+    return df
+
 
 # run
 date_compra_str = '2020-07-22'
 date_stuart_str = '2020-08-03'
 compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1.csv')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+
+# TODO: correct  stuart date
 compra_date_stuart_id_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
 
 df_compra_real = get_compra_real(date_compra_str, compra_file, productos_file)
+
+df_compra_stuart = get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file)
+
+df = merge_compra_real_stuart(df_compra_real, df_compra_stuart)
+
+
+aa = df_compra_stuart[df_compra_stuart['clima'].isin(['sin_clase','no_definido'])]
 
 
 #

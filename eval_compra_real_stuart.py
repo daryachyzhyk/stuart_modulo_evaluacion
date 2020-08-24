@@ -134,6 +134,8 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
 
     df['date_compra'] = date_compra_str
 
+    df['q_dif'] = df['recomendacion'] - df['compra_real']
+
     if file_save is not None:
 
         if not os.path.isfile(file_save):

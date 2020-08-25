@@ -500,11 +500,12 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
         stock_path = ('/var/lib/lookiero/stock/snapshots')
     if productos_file is None:
         productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-    if pedidos_file is None:
-        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+
     if venta_file is None:
         # venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda_preprocessed.csv.gz')
         venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda.csv.gz')
+    if pedidos_file is None:
+        pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
     if file_distribution_osfa is None:
         file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
     if file_estimates is None:
@@ -609,6 +610,9 @@ if __name__ == "__main__":
     run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     date_start = datetime.datetime(2020, 8, 3)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    date_start = datetime.datetime(2020, 8, 10)
     run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)

@@ -81,7 +81,7 @@ def get_compra_real(date_compra_str, compra_file, productos_file):
     df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
 
     # df_compra['info_type'] = 'pedido'
-    df_compra = df_compra.rename(columns={'cantidad_pedida': 'compra_real'})
+    df_compra = df_compra.rename(columns={'cantidad_pedida': 'q_real'})
 
     # else:
     #     print('There is no date ' + date_compra_str + '. Please update the data here: ' + compra_dates_file)
@@ -100,10 +100,12 @@ def get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates):
     df_raw = pd.read_csv(eval_estimates)
     df_stuart = df_raw[df_raw['id_stuart'] ==id_stuart]
 
+    df_stuart = df_stuart[df_stuart['info_type'] == 'pedido']
+
     df_stuart = df_stuart.rename(columns={'clase': 'size', 'q': 'q_estimate'})
     df_stuart = df_stuart[['family_desc', 'clima', 'size', 'info_type', 'q_estimate']]
 
-
+    df_stuart_merged = df_stuart.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q_estimate': 'sum'}).reset_index()
     #
     # df_date_id = pd.read_csv(compra_date_stuart_id_file)
     # date_stuart_str = df_date_id[df_date_id['date_compra']==date_compra_str]['date_stuart'].values[0]
@@ -117,7 +119,7 @@ def get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates):
     # df_raw[['temp', 'size']] = df_raw['clase'].str.split("-", expand=True)
     # df_raw = df_raw.rename(columns={'clase': 'size_desc'})
     # df_stuart = df_raw[['family_desc', 'clima', 'size', 'recomendacion', 'size_desc']]
-    return df_stuart
+    return df_stuart_merged
 
 
 def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, file_save_date=None):
@@ -128,7 +130,7 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
 
 
 
-    # TODO: remove clima not in [] such as 1.66
+    # remove clima not in the list such as 1.66
     list_clima = [0., 0.5, 1., 1.5, 2., 2.5, 3.]
     df_compra_stuart = df_compra_stuart[~df_compra_stuart['clima'].isin(list_clima)]
 
@@ -144,12 +146,12 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
                   df_compra_real,
                   on=['family_desc', 'clima', 'size'],
                   how='outer')
-    df['recomendacion'] = df['recomendacion'].fillna(0)
-    df['compra_real'] = df['compra_real'].fillna(0)
+    df['q_estimate'] = df['q_estimate'].fillna(0)
+    df['q_real'] = df['q_real'].fillna(0)
 
-    df['date_compra'] = date_compra_str
+    df['date_shoping'] = date_compra_str
 
-    df['q_dif'] = df['recomendacion'] - df['compra_real']
+    df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
 
     if file_save is not None:
 
@@ -195,7 +197,7 @@ df_compra_stuart = get_stuart_recommendation(date_compra_str, eval_settings, eva
 df = merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save, file_save_date)
 
 
-
+print('Total difference: ',  df['q_dif'].abs().sum())
 
 
 

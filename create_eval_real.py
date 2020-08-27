@@ -8,6 +8,8 @@ Script to create the table of the real data last week:
 The scrip take the date for analyze as a previous Monday to the day of run the code
 The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size', 'info_type', 'q'
 
+Data extraction as pandas DataFrame is appended to the historic data.
+
 '''
 
 import os
@@ -164,15 +166,10 @@ def get_pendientes_real(date_start, pedidos_file, productos_file):
                               on='reference',
                               how='left')
 
-
-
     df_pendientes = df_pedidos_fct.groupby(['family_desc', 'clima', 'size']).agg({'recibido': 'sum'}).reset_index()
-
-
 
     df_pendientes['info_type'] = 'pendientes'
     df_pendientes = df_pendientes.rename(columns={'recibido': 'q'})
-
 
     return df_pendientes
 
@@ -601,9 +598,11 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
 if __name__ == "__main__":
     # path
+    path_save = ('/var/lib/lookiero/stock/stock_tool')
+    path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 
-    path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
-    path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
+    # path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
+    # path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas/test_stock')
 
     # start with last week of july and first week of august
     date_start = datetime.datetime(2020, 7, 27)

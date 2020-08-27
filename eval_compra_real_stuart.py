@@ -89,19 +89,34 @@ def get_compra_real(date_compra_str, compra_file, productos_file):
     return df_compra
 
 
-def get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file):
-    df_date_id = pd.read_csv(compra_date_stuart_id_file)
-    date_stuart_str = df_date_id[df_date_id['date_compra']==date_compra_str]['date_stuart'].values[0]
-    date_stuart_datetime = datetime.datetime.strptime(date_stuart_str, '%Y-%m-%d')
-    path_stuart = ('/var/lib/lookiero/stock/stock_tool/stuart')
-    stuart_folder = date_stuart_datetime.strftime('%Y%m%d')
-    stuart_file = os.path.join(path_stuart, stuart_folder, 'stuart_output_todos.csv.gz')
+def get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates):
 
-    df_raw = pd.read_csv(stuart_file)
-    df_raw[['family_desc', 'clima']] = df_raw['family_desc-clima'].str.split("-", expand=True)
-    df_raw[['temp', 'size']] = df_raw['clase'].str.split("-", expand=True)
-    df_raw = df_raw.rename(columns={'clase': 'size_desc'})
-    df_stuart = df_raw[['family_desc', 'clima', 'size', 'recomendacion', 'size_desc']]
+    df_settings = pd.read_csv(eval_settings)
+
+
+
+
+    id_stuart = df_settings[df_settings['date_shopping']==date_compra_str]['id_stuart'].values.max()
+    df_raw = pd.read_csv(eval_estimates)
+    df_stuart = df_raw[df_raw['id_stuart'] ==id_stuart]
+
+    df_stuart = df_stuart.rename(columns={'clase': 'size', 'q': 'q_estimate'})
+    df_stuart = df_stuart[['family_desc', 'clima', 'size', 'info_type', 'q_estimate']]
+
+
+    #
+    # df_date_id = pd.read_csv(compra_date_stuart_id_file)
+    # date_stuart_str = df_date_id[df_date_id['date_compra']==date_compra_str]['date_stuart'].values[0]
+    # date_stuart_datetime = datetime.datetime.strptime(date_stuart_str, '%Y-%m-%d')
+    # path_stuart = ('/var/lib/lookiero/stock/stock_tool/stuart')
+    # stuart_folder = date_stuart_datetime.strftime('%Y%m%d')
+    # stuart_file = os.path.join(path_stuart, stuart_folder, 'stuart_output_todos.csv.gz')
+    #
+    # df_raw = pd.read_csv(stuart_file)
+    # df_raw[['family_desc', 'clima']] = df_raw['family_desc-clima'].str.split("-", expand=True)
+    # df_raw[['temp', 'size']] = df_raw['clase'].str.split("-", expand=True)
+    # df_raw = df_raw.rename(columns={'clase': 'size_desc'})
+    # df_stuart = df_raw[['family_desc', 'clima', 'size', 'recomendacion', 'size_desc']]
     return df_stuart
 
 
@@ -154,8 +169,13 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
 
 
 # run
-date_compra_str = '2020-07-22'
-date_stuart_str = '2020-08-03'
+date_compra_str = '2020-08-03'
+# date_stuart_str = '2020-08-03'
+
+# path = ('/var/lib/lookiero/stock/stock_tool')
+eval_settings = '/var/lib/lookiero/stock/stock_tool/eval_settings.csv.gz'
+eval_estimates = '/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz'
+
 compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1.csv')
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
@@ -166,11 +186,11 @@ file_save = os.path.join(path_save, 'eval_estimates_real_compra.csv.gz')
 file_save_date = os.path.join(path_save_date, 'eval_estimates_real_compra_' + date_compra_str + '.csv.gz')
 
 # TODO: correct  stuart date
-compra_date_stuart_id_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
+# compra_date_stuart_id_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
 
 df_compra_real = get_compra_real(date_compra_str, compra_file, productos_file)
 
-df_compra_stuart = get_stuart_recommendation(date_compra_str, compra_date_stuart_id_file)
+df_compra_stuart = get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates)
 
 df = merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save, file_save_date)
 

@@ -153,6 +153,17 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
 
     df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
 
+    size_dic = {'XXS': '0-XXS',
+                'XS': '1-XS',
+                'S': '2-S',
+                'M': '3-M',
+                'L': '4-L',
+                'XL': '5-XL',
+                'XXL': '6-XXL',
+                'XXXL': '7-XXXL',
+                'X4XL': '8-X4XL'}
+    df['size_desc'] = df['size'].replace(size_dic)
+
     if file_save is not None:
 
         if not os.path.isfile(file_save):

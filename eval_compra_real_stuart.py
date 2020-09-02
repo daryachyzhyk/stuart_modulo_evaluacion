@@ -97,6 +97,7 @@ def get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates):
 
 
     id_stuart = df_settings[df_settings['date_shopping']==date_compra_str]['id_stuart'].values.max()
+    print('ID de Dtuart = ', id_stuart)
     df_raw = pd.read_csv(eval_estimates)
     df_stuart = df_raw[df_raw['id_stuart'] ==id_stuart]
 

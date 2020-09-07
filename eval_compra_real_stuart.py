@@ -150,7 +150,7 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, f
     df['q_estimate'] = df['q_estimate'].fillna(0)
     df['q_real'] = df['q_real'].fillna(0)
 
-    df['date_shoping'] = date_compra_str
+    df['date_shopping'] = date_compra_str
 
     df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
 

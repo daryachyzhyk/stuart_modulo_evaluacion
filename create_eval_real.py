@@ -443,6 +443,12 @@ def merge_eval_estimates_real(date_start_str, file_estimates, file_real, file_sa
     df['q_estimates_alg'] = df['q_estimates'] / df.groupby(['id_stuart', 'date_week', 'info_type'])['q_estimates'].transform('sum')
     df['q_real_rel'] = df['q_real'] / df.groupby(['id_stuart', 'date_week', 'info_type'])['q_real'].transform('sum')
 
+    df.loc[df['info_type'] != 'envios', 'q_estimates_alg'] = 0
+    df.loc[df['info_type'] != 'envios', 'q_real_rel'] = 0
+
+    df['q_dif_alg'] = df['q_estimates_alg'] - df['q_real_rel']
+
+
     df['q_real'] = np.round(df['q_real'], 0)
 
 
@@ -623,25 +629,25 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
 if __name__ == "__main__":
     # path
-    # path_save = ('/var/lib/lookiero/stock/stock_tool')
-    # path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+    path_save = ('/var/lib/lookiero/stock/stock_tool')
+    path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 
-    path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas')
-    path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas')
+    # path_save = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas')
+    # path_save_date = ('/home/darya/Documents/stuart/data/kpi/eval_pruebas')
 
     # start with last week of july and first week of august
 
-    # date_start = datetime.datetime(2020, 7, 27)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 8, 3)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 8, 10)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 8, 17)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    date_start = datetime.datetime(2020, 7, 27)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    date_start = datetime.datetime(2020, 8, 3)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    date_start = datetime.datetime(2020, 8, 10)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    date_start = datetime.datetime(2020, 8, 17)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 

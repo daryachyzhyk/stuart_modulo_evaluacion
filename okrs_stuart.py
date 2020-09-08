@@ -66,3 +66,63 @@ df_compra_date_fam.plot.bar(x='family_desc', y='q_dif_div', rot=90)
 df_eval = pd.read_csv(file_eval)
 
 df_eval_real = pd.read_csv(file_eval_real)
+
+
+
+df_envios = df_eval_real[df_eval_real['info_type']=='envios']
+
+df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
+
+df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] / df_envios['q_real_rel'] * 100
+df_envios['q_dif_alg_pct'] = df_envios['q_dif_alg'] / df_envios['q_real_rel'] * 100
+
+
+df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_pct'] = 0
+df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] != 0), 'q_dif_alg_pct'] = 100
+df_envios.loc[(df_envios['q_estimates_alg'] != 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_pct'] = 100
+
+
+
+# df_alg_fam = df_envios.groupby(['date_week', 'family_desc', 'size']).agg({'q_dif_alg_pct': 'sum',
+#                                                               # 'q_dif_ạ̣lg_pct': 'mean',
+#                                                               'q_dif_alg': 'sum',
+#                                                               'q_estimates_alg': 'sum',
+#                                                               'q_real_rel': 'sum',
+#                                                               'info_type': 'count'
+#                                                               }).reset_index()
+
+
+
+
+df_alg = df_envios.groupby(['date_week', 'family_desc']).agg({'q_dif_alg_pct': 'sum',
+                                                              # 'q_dif_ạ̣lg_pct': 'mean',
+                                                              # 'q_dif_alg_abs': 'sum',
+                                                              'q_estimates_alg': 'sum',
+                                                              'q_real_rel': 'sum',
+                                                              'info_type': 'count'
+                                                              }).reset_index()
+
+df_alg = df_alg.rename(columns={'info_type': 'count'})
+
+df_alg.loc[df_alg['family_desc'].isin(['BOLSO', 'BUFANDA', 'FULAR']), 'count'] = 8
+
+df_alg['q_dif_alg_pct_fam'] = df_alg['q_dif_alg_pct'] / df_alg['count']
+
+
+df_alg_date = df_alg.groupby(['date_week']).agg({'q_dif_alg_pct_fam': 'mean'})
+
+
+#
+# test = df_eval_real[(df_eval_real['date_week']=='2020-07-27')
+#                     & (df_eval_real['family_desc']=='BOLSO')
+#                     & (df_eval_real['info_type']=='envios')]
+
+
+
+###############################
+# envios
+
+
+
+
+

@@ -98,4 +98,33 @@ df_alg_date = df_alg.groupby(['date_week']).agg({'q_dif_alg_pct_fam': 'mean'})
 # OKR - 3 - devos
 
 
+df_devos = df_eval_real[df_eval_real['info_type']=='devos']
+
+
+df_devos['q_dif_pct'] = df_devos['q_dif'] / df_devos['q_real'] * 100
+
+
+df_devos.loc[(df_devos['q_estimates'] == 0) & (df_devos['q_real'] == 0), 'q_dif_pct'] = 0
+df_devos.loc[(df_devos['q_estimates'] == 0) & (df_devos['q_real'] != 0), 'q_dif_pct'] = 100
+df_devos.loc[(df_devos['q_estimates'] != 0) & (df_devos['q_real'] == 0), 'q_dif_pct'] = 100
+
+
+
+df_devos_date_fam = df_devos.groupby(['date_week', 'family_desc']).agg({'q_dif_pct': 'sum',
+                                                                         'info_type': 'count'}).reset_index()
+
+df_devos_date_fam = df_devos_date_fam.rename(columns={'info_type': 'count'})
+
+df_devos_date_fam.loc[df_devos_date_fam['family_desc'].isin(['BOLSO', 'BUFANDA', 'FULAR']), 'count'] = 8
+
+df_devos_date_fam['q_dif_pct_fam'] = df_devos_date_fam['q_dif_pct'] / df_devos_date_fam['count']
+
+
+df_devos_date = df_devos_date_fam.groupby(['date_week']).agg({'q_dif_pct_fam': 'mean'})
+
+
+#
+# test = df_eval_real[(df_eval_real['date_week']=='2020-07-27')
+#                     & (df_eval_real['family_desc']=='BOLSO')
+#                     & (df_eval_real['info_type']=='envios')]
 

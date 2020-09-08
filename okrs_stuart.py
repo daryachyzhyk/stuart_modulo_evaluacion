@@ -23,7 +23,7 @@ threshold = 20
 #OKR - 1- Difference Shopping and Stuart
 
 
-
+df_eval_compra = pd.read_csv(file_eval_compra)
 
 df_eval_compra['q_dif_abs'] = np.abs(df_eval_compra['q_dif'])
 df_compra_date_fam = df_eval_compra.groupby(['date_shopping', 'family_desc']).agg({'q_dif_abs': 'sum',
@@ -65,4 +65,4 @@ df_compra_date_fam.plot.bar(x='family_desc', y='q_dif_div', rot=90)
 
 df_eval = pd.read_csv(file_eval)
 
-df_eval_compra = pd.read_csv(file_eval_compra)
+df_eval_real = pd.read_csv(file_eval_real)

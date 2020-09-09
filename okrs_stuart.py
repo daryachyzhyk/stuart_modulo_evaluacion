@@ -58,6 +58,11 @@ df_date_number_fam['q_dif_family_pct'] = np.round(df_date_number_fam['q_dif_thre
 
 df_compra_date_fam.plot.bar(x='family_desc', y='q_dif_div', rot=90)
 
+df_compra_date = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_div': 'mean'})
+
+# Conclusion: 65% de familias estan por encima del umbral 20% de diferencia entre compra y recomendacion.
+# Hay 69% de la diferencia de unidades a nivel familia
+
 
 #####
 # okr 2- envios
@@ -92,7 +97,28 @@ df_alg['q_dif_alg_pct_fam'] = df_alg['q_dif_alg_pct'] / df_alg['count']
 
 df_alg_date = df_alg.groupby(['date_week']).agg({'q_dif_alg_pct_fam': 'mean'})
 
+df_alg_date_fam_size = df_envios.groupby(['date_week', 'family_desc', 'size_desc']).agg({'q_dif_alg_pct': 'sum',
+                                                              'q_estimates_alg': 'sum',
+                                                              'q_real_rel': 'sum',
+                                                              'info_type': 'count'
+                                                              }).reset_index()
 
+
+
+
+test = df_envios[(df_envios['date_week']=='2020-07-27')
+                    & (df_envios['family_desc']=='BLUSA')]
+
+
+# conclusion en df_alg_date
+
+# date_week              q_dif_alg_pct_fam
+# 2020-07-27          47.567220
+# 2020-08-03          66.684366
+# 2020-08-10          53.054112
+# 2020-08-17          67.792720
+# 2020-08-24          68.177977
+# 2020-08-31         168.985304
 
 ###############################
 # OKR - 3 - devos

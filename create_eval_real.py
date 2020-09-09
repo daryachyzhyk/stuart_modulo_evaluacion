@@ -637,17 +637,17 @@ if __name__ == "__main__":
 
     # start with last week of july and first week of august
 
-    date_start = datetime.datetime(2020, 7, 27)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-
-    date_start = datetime.datetime(2020, 8, 3)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-
-    date_start = datetime.datetime(2020, 8, 10)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-
-    date_start = datetime.datetime(2020, 8, 17)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_start = datetime.datetime(2020, 7, 27)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    #
+    # date_start = datetime.datetime(2020, 8, 3)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    #
+    # date_start = datetime.datetime(2020, 8, 10)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    #
+    # date_start = datetime.datetime(2020, 8, 17)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 

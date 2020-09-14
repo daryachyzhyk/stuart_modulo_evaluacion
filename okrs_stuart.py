@@ -1,12 +1,19 @@
+'''OKR of the Stuart:
+- Difference Shopping and Stuart
+- Envios
+- Devos
+- Roturas
+
+'''
+
 
 import os
-import glob
 import pandas as pd
 import numpy as np
 import datetime
 
 
-########################
+#######################################################################################################################
 # path
 file_eval_real = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real.csv.gz')
 
@@ -14,13 +21,29 @@ file_eval = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
 
 file_eval_compra = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real_compra.csv.gz')
 
+day_today = datetime.datetime.now()
 
-####################
+
+date_monday = day_today - datetime.timedelta(days=7 + day_today.weekday())
+
+date_str = datetime.datetime.strftime(date_monday, '%Y-%m-%d')
+
+result_folder = '/var/lib/lookiero/stock/stock_tool/okr'
+
+backup_folder = os.path.join(result_folder, date_str)
+
+if not os.path.exists(backup_folder):
+    os.makedirs(backup_folder)
+
+
+#######################################################################################################################
 # parameters
+
+# threshold which we consider important as a difference in % between Compra Real and Stuart recommendation
 threshold = 20
 
-############################3
-#OKR - 1- Difference Shopping and Stuart
+#######################################################################################################################
+# OKR - 1- Difference Shopping and Stuart
 
 
 df_eval_compra = pd.read_csv(file_eval_compra)
@@ -63,8 +86,19 @@ df_compra_date = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_div':
 # Conclusion: 65% de familias estan por encima del umbral 20% de diferencia entre compra y recomendacion.
 # Hay 69% de la diferencia de unidades a nivel familia
 
+# TODO: save
+# file_save_shopping = os.path.join(result_folder, 'okr-compra')
+# df_compra_date .to_csv(file_save_shopping, mode='a', index=False, header=True)
+#
+# if not os.path.isfile(file_save):
+#     print('Creating a new file ' + file_save)
+#     df.to_csv(file_save, mode='a', index=False, header=True)
+# else:
+#     print('Appending to existing file ' + file_save)
+#     df.to_csv(file_save, mode='a', index=False, header=False)
 
-#####
+
+#######################################################################################################################
 # okr 2- envios
 
 
@@ -74,7 +108,7 @@ df_envios = df_eval_real[df_eval_real['info_type']=='envios']
 
 df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
 
-df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] / df_envios['q_real_rel'] * 100
+# df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] / df_envios['q_real_rel'] * 100
 df_envios['q_dif_alg_pct'] = df_envios['q_dif_alg'] / df_envios['q_real_rel'] * 100
 
 
@@ -120,7 +154,7 @@ test = df_envios[(df_envios['date_week']=='2020-07-27')
 # 2020-08-24          68.177977
 # 2020-08-31         168.985304
 
-###############################
+#######################################################################################################################
 # OKR - 3 - devos
 
 
@@ -154,3 +188,5 @@ df_devos_date = df_devos_date_fam.groupby(['date_week']).agg({'q_dif_pct_fam': '
 #                     & (df_eval_real['family_desc']=='BOLSO')
 #                     & (df_eval_real['info_type']=='envios')]
 
+#######################################################################################################################
+# gather all the data

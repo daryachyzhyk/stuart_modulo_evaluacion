@@ -23,6 +23,9 @@ file_eval_compra = ('/var/lib/lookiero/stock/stock_tool/eval_estimates_real_comp
 
 file_eval_settings = ('/var/lib/lookiero/stock/stock_tool/eval_settings.csv.gz')
 
+result_folder = '/var/lib/lookiero/stock/stock_tool/okr'
+
+
 date_start_str = '2020-08-23' # we analyze whole week to which the indicated day belongs
 number_weeks = 4
 
@@ -69,6 +72,9 @@ df_date_shopping_week = pd.melt(df_dates_settings, value_vars=df_dates_settings.
 
 df_shopping_mondays = pd.merge(df_all_mondays, df_date_shopping_week, on=['date_week'], how='left')
 
+df_shopping_week_numbers = df_shopping_mondays['date_shopping'].value_counts().rename_axis('date_shopping').reset_index(name='n_weeks')
+
+
 list_shopping_date = list(set(df_shopping_mondays['date_shopping'].to_list()))
 
 
@@ -79,31 +85,27 @@ list_shopping_date = list(set(df_shopping_mondays['date_shopping'].to_list()))
 # date_monday = day_today - datetime.timedelta(days=7 + day_today.weekday())
 # date_str = datetime.datetime.strftime(date_monday, '%Y-%m-%d')
 
-result_folder = '/var/lib/lookiero/stock/stock_tool/okr'
 
-backup_folder = os.path.join(result_folder, all_mondays_str[0])
 
-if not os.path.exists(backup_folder):
-    os.makedirs(backup_folder)
 
 
 #######################################################################################################################
 # parameters
 
 # threshold which we consider important as a difference in % between Compra Real and Stuart recommendation
-threshold = 20
+threshold = 0.2
 
 #######################################################################################################################
 # OKR - 1- Difference Shopping and Stuart
 
 
-df_eval_compra = pd.read_csv(file_eval_compra)
+df_eval_compra_all = pd.read_csv(file_eval_compra)
 
 
-if all(elem in list(set(df_eval_compra['date_shopping'].to_list())) for elem in list_shopping_date):
+if all(elem in list(set(df_eval_compra_all['date_shopping'].to_list())) for elem in list_shopping_date):
     print('Selected dates are ok')
 else:
-    shopping_not_in_list = [elem for elem in list_shopping_date if elem not in list(set(df_eval_compra['date_shopping'].to_list()))]
+    shopping_not_in_list = [elem for elem in list_shopping_date if elem not in list(set(df_eval_compra_all['date_shopping'].to_list()))]
 
     dates_not_covered = []
     for d in shopping_not_in_list:
@@ -113,52 +115,87 @@ else:
     print('We do NOT have shopping information ' + str(shopping_not_in_list) + ' about selected dates:'
           + str(dates_not_covered) + '. Please, select another dates.')
 
+# df_okr_compra = pd.DataFrame([], columns=['date_shopping', 'dif_fam_size_pct'])
+# dic_shop_fam_size = {}
+df_family_size_dif_binary = pd.DataFrame([])
+list_okr_shopping_pct = []
+for date_s in list_shopping_date:
+    # list_okr_shopping.append(date_s)
+    df_eval_compra = df_eval_compra_all[df_eval_compra_all['date_shopping'] == date_s]
+
+    df_eval_compra['q_dif_abs'] = np.abs(df_eval_compra['q_dif'])
+    df_compra_date_fam = df_eval_compra.groupby(['date_shopping', 'family_desc', 'size']).agg({'q_dif_abs': 'sum',
+                                                                                               'q_estimate': 'sum',
+                                                                                               'q_real': 'sum'}).reset_index()
 
 
+    # df_compra_date_fam['q_dif_abs_pct'] = df_compra_date_fam['q_dif_abs'] / df_compra_date_fam['q_estimate']
 
 
-
-# list_shopping_date in list(set(df_eval_compra['date_shopping'].to_list()))
-
-df_eval_compra['q_dif_abs'] = np.abs(df_eval_compra['q_dif'])
-df_compra_date_fam = df_eval_compra.groupby(['date_shopping', 'family_desc']).agg({'q_dif_abs': 'sum',
-                                                                                   'q_estimate': 'sum',
-                                                                                   'q_real': 'sum'}).reset_index()
+    df_compra_date_fam['q_dif_div'] = np.abs(df_compra_date_fam['q_real'] / df_compra_date_fam['q_estimate'] - 1)
 
 
+    df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] == 0) & (df_compra_date_fam['q_real'] == 0), 'q_dif_div'] = 0
 
-df_compra_date_fam['q_dif_abs_pct'] = df_compra_date_fam['q_dif_abs'] / df_compra_date_fam['q_estimate']
+    df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] == 0) & (df_compra_date_fam['q_real'] != 0), 'q_dif_div'] = 1
 
-
-df_compra_date_fam['q_dif_div'] = np.abs(df_compra_date_fam['q_real'] / df_compra_date_fam['q_estimate'] - 1) * 100
-
-
-df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] == 0) & (df_compra_date_fam['q_real'] == 0), 'q_dif_div'] = 0
-
-df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] == 0) & (df_compra_date_fam['q_real'] != 0), 'q_dif_div'] = 100
-
-df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] != 0) & (df_compra_date_fam['q_real'] == 0), 'q_dif_div'] = 100
+    df_compra_date_fam.loc[(df_compra_date_fam['q_estimate'] != 0) & (df_compra_date_fam['q_real'] == 0), 'q_dif_div'] = 1
 
 
-df_compra_date_fam.loc[df_compra_date_fam['q_dif_div'] > threshold, 'q_dif_thresh'] = 1
+    df_compra_date_fam.loc[df_compra_date_fam['q_dif_div'] > threshold, 'q_dif_thresh'] = 1
 
-df_compra_date_fam['q_dif_thresh'] = df_compra_date_fam['q_dif_thresh'].fillna(0)
-
-
-df_date_number_fam = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_thresh': 'sum',
-                                                                        'family_desc': 'count'}).reset_index()
-
-df_date_number_fam['q_dif_family_pct'] = np.round(df_date_number_fam['q_dif_thresh'] / df_date_number_fam['family_desc'] * 100, 0)
+    df_compra_date_fam['q_dif_thresh'] = df_compra_date_fam['q_dif_thresh'].fillna(0)
 
 
-df_compra_date_fam.plot.bar(x='family_desc', y='q_dif_div', rot=90)
+    df_date_number_fam = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_thresh': 'sum',
+                                                                            'family_desc': 'count'}).reset_index()
 
-df_compra_date = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_div': 'mean'})
+    df_date_number_fam['q_dif_family_pct'] = np.round(df_date_number_fam['q_dif_thresh'] / df_date_number_fam['family_desc'], 2)
+
+    list_okr_shopping_pct.append(df_date_number_fam['q_dif_family_pct'].values[0])
+    # df_similar.append(df_compra_date_fam.loc[df_compra_date_fam['q_dif_thresh']==0][['date_shopping', 'family_desc', 'size', 'q_dif_thresh']])
+
+    df_family_size_dif_binary = df_family_size_dif_binary.append(df_compra_date_fam[['date_shopping', 'family_desc', 'size', 'q_dif_thresh']])
+
+    # df_compra_date_fam.plot.bar(x='family_desc', y='q_dif_div', rot=90)
+
+
+    # df_compra_date = df_compra_date_fam.groupby(['date_shopping']).agg({'q_dif_div': 'mean'})
+
+df_okr_shopping = pd.DataFrame({#'date_start': date_start_str,
+                                # 'n_weeks': number_weeks,
+                                'date_shopping': list_shopping_date,
+                                'dif_recomend_shopping_pct': list_okr_shopping_pct})
+df_okr_shopping['date_start'] = date_start_str
+df_okr_shopping['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
+# df_okr_shopping['n_weeks'] = number_weeks
+
+df_okr_shopping = pd.merge(df_okr_shopping, df_shopping_week_numbers, on=['date_shopping'], how='left')
+
+
+df_family_size_dif_binary = df_family_size_dif_binary.rename(columns={'q_dif_thresh': 'different'})
+df_family_size_dif_binary['date_start'] = date_start_str
+df_family_size_dif_binary['n_weeks'] = number_weeks
+
 
 # Conclusion: 65% de familias estan por encima del umbral 20% de diferencia entre compra y recomendacion.
 # Hay 69% de la diferencia de unidades a nivel familia
 
 # TODO: save
+
+
+backup_folder = os.path.join(result_folder, all_mondays_str[0])
+
+if not os.path.exists(backup_folder):
+    os.makedirs(backup_folder)
+
+
+df_okr_shopping.to_csv(os.path.join(backup_folder, 'okr_shopping.csv'), index=False, header=True)
+
+df_family_size_dif_binary.to_csv(os.path.join(backup_folder, 'okr_recomend_shopping_dif_binary.csv'), index=False, header=True)
+
+
+
 # file_save_shopping = os.path.join(result_folder, 'okr-compra')
 # df_compra_date .to_csv(file_save_shopping, mode='a', index=False, header=True)
 #

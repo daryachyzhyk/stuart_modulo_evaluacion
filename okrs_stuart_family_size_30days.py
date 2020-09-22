@@ -43,8 +43,11 @@ for i in range(number_weeks):
 
 
 all_mondays_str = [datetime.datetime.strftime(i, '%Y-%m-%d') for i in all_mondays]
+all_date_week_str = [datetime.datetime.strftime(i + datetime.timedelta(days=7), '%Y-%m-%d') for i in all_mondays]
 
-df_all_mondays = pd.DataFrame({'date_week': all_mondays})
+df_all_mondays = pd.DataFrame({'date_monday': all_mondays,
+                               'date_week': all_date_week_str})
+
 
 df_settings = pd.read_csv(file_eval_settings, usecols=['id_stuart', 'date_shopping', 'date_order_in_stock',
                                                        'date_next_order_in_stock'])
@@ -67,10 +70,10 @@ for index, row in df_settings.iterrows():
 df_dates_settings = pd.DataFrame.from_dict(dic_settings)
 
 df_date_shopping_week = pd.melt(df_dates_settings, value_vars=df_dates_settings.columns,
-        var_name='date_shopping', value_name='date_week')
+        var_name='date_shopping', value_name='date_monday')
 
 
-df_shopping_mondays = pd.merge(df_all_mondays, df_date_shopping_week, on=['date_week'], how='left')
+df_shopping_mondays = pd.merge(df_all_mondays, df_date_shopping_week, on=['date_monday'], how='left')
 
 df_shopping_week_numbers = df_shopping_mondays['date_shopping'].value_counts().rename_axis('date_shopping').reset_index(name='n_weeks')
 
@@ -165,7 +168,7 @@ for date_s in list_shopping_date:
 df_okr_shopping = pd.DataFrame({#'date_start': date_start_str,
                                 # 'n_weeks': number_weeks,
                                 'date_shopping': list_shopping_date,
-                                'dif_recomend_shopping_pct': list_okr_shopping_pct})
+                                'dif_recommend_shopping_pct': list_okr_shopping_pct})
 df_okr_shopping['date_start'] = date_start_str
 df_okr_shopping['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
 # df_okr_shopping['n_weeks'] = number_weeks
@@ -174,14 +177,15 @@ df_okr_shopping = pd.merge(df_okr_shopping, df_shopping_week_numbers, on=['date_
 
 
 df_family_size_dif_binary = df_family_size_dif_binary.rename(columns={'q_dif_thresh': 'different'})
-df_family_size_dif_binary['date_start'] = date_start_str
-df_family_size_dif_binary['n_weeks'] = number_weeks
+# df_family_size_dif_binary['date_start'] = date_start_str
+# df_family_size_dif_binary['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
+# df_family_size_dif_binary['n_weeks'] = number_weeks
 
 
 # Conclusion: 65% de familias estan por encima del umbral 20% de diferencia entre compra y recomendacion.
 # Hay 69% de la diferencia de unidades a nivel familia
 
-# TODO: save
+
 
 
 backup_folder = os.path.join(result_folder, all_mondays_str[0])
@@ -192,7 +196,7 @@ if not os.path.exists(backup_folder):
 
 df_okr_shopping.to_csv(os.path.join(backup_folder, 'okr_shopping.csv'), index=False, header=True)
 
-df_family_size_dif_binary.to_csv(os.path.join(backup_folder, 'okr_recomend_shopping_dif_binary.csv'), index=False, header=True)
+df_family_size_dif_binary.to_csv(os.path.join(backup_folder, 'recommend_shopping_dif_binary.csv'), index=False, header=True)
 
 
 
@@ -213,7 +217,15 @@ df_family_size_dif_binary.to_csv(os.path.join(backup_folder, 'okr_recomend_shopp
 
 df_eval_real = pd.read_csv(file_eval_real)
 
-df_envios = df_eval_real[df_eval_real['info_type'] == 'envios']
+df_envios_raw = df_eval_real[df_eval_real['info_type'] == 'envios']
+
+df_envios = df_envios_raw[df_envios_raw['date_week'].isin(df_shopping_mondays['date_week'].to_list())]
+
+# add date_shopping
+df_envios = pd.merge(df_envios, df_shopping_mondays[['date_week', 'date_shopping']],
+                     on=['date_week'],
+                     how='left')
+
 
 df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
 

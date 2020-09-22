@@ -226,30 +226,77 @@ df_envios = pd.merge(df_envios, df_shopping_mondays[['date_week', 'date_shopping
                      on=['date_week'],
                      how='left')
 
+# add information about difference
+df_envios = pd.merge(df_envios, df_family_size_dif_binary,
+                     on=['date_shopping', 'family_desc', 'size'],
+                     how='left')
+
+# remove family-size where shopping and recommendation are different
+df_envios = df_envios[df_envios['different'] == 0]
+
+test_unq = df_envios[df_envios['size'] == 'UNQ']
+
+# drop families
+list_family_drop = ['GORRO', 'SNEAKERS', 'BOTAS', 'BOTINES']
+df_envios = df_envios.drop(df_envios[df_envios['family_desc'].isin(list_family_drop)].index)
+
+# drop sizes for accessories
+list_family_acces = ['BOLSO', 'BUFANDA', 'FULAR']
+
+test = df_envios[(df_envios['family_desc'].isin(list_family_acces)) &
+                                     (df_envios['size'] != 'UNQ')]
+
+df_envios = df_envios.drop(df_envios[(df_envios['family_desc'].isin(list_family_acces)) &
+                                     (df_envios['size'] != 'UNQ')].index)
+
+
+
+
+# df_new = df.drop(df[(df['col_1'] == 1.0) & (df['col_2'] == 0.0)].index)
 
 df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
 
 # df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] / df_envios['q_real_rel'] * 100
 # df_envios['q_dif_alg_pct'] = df_envios['q_dif_alg'] / df_envios['q_real_rel'] * 100
 
-    #
-
 df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs'] = 0
 df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] != 0), 'q_dif_alg_abs'] = 1
 df_envios.loc[(df_envios['q_estimates_alg'] != 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs'] = 1
 
-df_alg = df_envios.groupby(['date_week', 'family_desc', 'size']).agg({'q_dif_alg_abs': 'sum',
-                                                              'info_type': 'count'
-                                                              }).reset_index()
+df_alg = df_envios.groupby(['family_desc', 'size']).agg({'q_dif_alg_abs': 'mean'}).reset_index()
+df_alg = df_alg.rename(columns={'q_dif_alg_abs': 'q'})
+df_alg['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
+df_alg['n_week'] = number_weeks
+df_alg['date_week'] = df_shopping_mondays.loc[df_shopping_mondays['date_monday'] == datetime.datetime.strftime(date_monday_start, '%Y-%m-%d'), 'date_week'].values[0]
 
+
+df_alg.to_csv(os.path.join(backup_folder, 'okr_envios.csv'), index=False, header=True)
+
+
+
+
+
+
+
+
+# df_alg = df_envios.groupby(['date_week', 'family_desc']).agg({'q_dif_alg_pct': 'sum',
+#                                                               'q_estimates_alg': 'sum',
+#                                                               'q_real_rel': 'sum',
+#                                                               'info_type': 'count'
+#                                                               }).reset_index()
+
+
+
+# test = df_envios.groupby(['family_desc', 'size']).agg({'q_dif_alg_abs': 'mean'}).reset_index()
+# 'date_week',
 df_alg = df_alg.rename(columns={'info_type': 'count'})
 
-df_alg.loc[df_alg['family_desc'].isin(['BOLSO', 'BUFANDA', 'FULAR']), 'count'] = 8
+# df_alg.loc[df_alg['family_desc'].isin(['BOLSO', 'BUFANDA', 'FULAR']), 'count'] = 8
 
-df_alg['q_dif_alg_pct_fam'] = df_alg['q_dif_alg_pct'] / df_alg['count']
+# df_alg['q_dif_alg_fam_size'] = df_alg['q_dif_alg_abs'] / df_alg['count']
 
 
-df_alg_date = df_alg.groupby(['date_week']).agg({'q_dif_alg_pct_fam': 'mean'})
+df_alg_date = df_alg.groupby(['date_week']).agg({'q_dif_alg_pct_fam_size': 'mean'})
 
 df_alg_date_fam_size = df_envios.groupby(['date_week', 'family_desc', 'size_desc']).agg({'q_dif_alg_pct': 'sum',
                                                               'q_estimates_alg': 'sum',
@@ -260,8 +307,8 @@ df_alg_date_fam_size = df_envios.groupby(['date_week', 'family_desc', 'size_desc
 
 
 
-test = df_envios[(df_envios['date_week']=='2020-07-27')
-                    & (df_envios['family_desc']=='BLUSA')]
+# test = df_envios[(df_envios['date_week']=='2020-07-27')
+#                     & (df_envios['family_desc']=='BLUSA')]
 
 
 # conclusion en df_alg_date

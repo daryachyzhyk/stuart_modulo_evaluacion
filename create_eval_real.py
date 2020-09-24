@@ -118,8 +118,8 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
             df_stock_all = df_stock_all.append(df_stock_day)
     elif how == 'monday':
         print(date_start)
-        stock_fecha = date_start.strftime('%Y%m%d')
-
+        # stock_fecha = date_start.strftime('%Y%m%d')
+        stock_fecha = date_end.strftime('%Y%m%d')
         stock_file = sorted(glob.glob(os.path.join(stock_path, stock_fecha + '*')))[0]
         print(stock_file)
         query_stock_text = 'real_stock > 0 and active > 0'

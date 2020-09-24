@@ -150,10 +150,9 @@ df_eval_real = pd.read_csv(file_eval_real)
 
 df_envios_raw = df_eval_real[df_eval_real['info_type'] == 'envios']
 
-df_envios = df_envios_raw.groupby(['date_week', 'family_desc', 'size']).agg({'q_estimates_alg': 'sum',
-                                                                              'q_real_rel': 'sum'}).reset_index()
 
-df_envios = df_envios[df_envios['date_week'].isin(df_shopping_mondays['date_week'].to_list())]
+
+df_envios = df_envios_raw[df_envios_raw['date_week'].isin(df_shopping_mondays['date_week'].to_list())]
 
 # add date_shopping
 df_envios = pd.merge(df_envios,
@@ -176,44 +175,46 @@ df_envios = df_envios.drop(df_envios[df_envios['family_desc'].isin(list_family_d
 # drop sizes for accessories
 list_family_acces = ['BOLSO', 'BUFANDA', 'FULAR']
 
-test = df_envios[(df_envios['family_desc'].isin(list_family_acces)) & (df_envios['size'] != 'UNQ')]
+# test = df_envios[(df_envios['family_desc'].isin(list_family_acces)) & (df_envios['size'] != 'UNQ')]
 
 df_envios = df_envios.drop(df_envios[(df_envios['family_desc'].isin(list_family_acces)) &
                                      (df_envios['size'] != 'UNQ')].index)
 
+
+
+df_envios = df_envios.groupby(['family_desc', 'size']).agg({'q_estimates_alg': 'sum',
+                                                             'q_real_rel': 'sum'}).reset_index()
+
 # df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
 df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_estimates_alg'] - df_envios['q_real_rel'])
 
-df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] / df_envios['q_real_rel']
+df_envios['q_dif_alg_abs_pct'] = df_envios['q_dif_alg_abs'] * df_envios['q_real_rel']
 
-df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs_pct'] = 0
-df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] != 0), 'q_dif_alg_abs_pct'] = 1
-df_envios.loc[(df_envios['q_estimates_alg'] != 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs_pct'] = 1
+# df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs_pct'] = 0
+# df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] != 0), 'q_dif_alg_abs_pct'] = 1
+# df_envios.loc[(df_envios['q_estimates_alg'] != 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs_pct'] = 1
 
 
 # df_envios['q_dif_alg_pct'] = df_envios['q_dif_alg'] / df_envios['q_real_rel'] * 100
-
 # df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs'] = 0
 # df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] != 0), 'q_dif_alg_abs'] = 1
 # df_envios.loc[(df_envios['q_estimates_alg'] != 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs'] = 1
 
-
-
-
 # df_alg_fam_size = df_envios.groupby(['date_week', 'family_desc', 'size']).agg({'q_dif_alg_abs_pct': 'sum'}).reset_index()
-df_alg_fam_size = df_envios.groupby(['family_desc', 'size']).agg({'q_dif_alg_abs_pct': 'mean'}).reset_index()
+
+# df_alg_fam_size = df_envios.groupby(['family_desc', 'size']).agg({'q_dif_alg_abs_pct': 'mean'}).reset_index()
 
 
-df_alg_fam_size = df_alg_fam_size.rename(columns={'q_dif_alg_abs_pct': 'okr_value'})
+df_alg_fam_size = df_envios.rename(columns={'q_dif_alg_abs_pct': 'okr_value'})
 df_alg_fam_size['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
 df_alg_fam_size['n_week'] = number_weeks
 df_alg_fam_size['date_week'] = df_shopping_mondays.loc[df_shopping_mondays['date_monday'] == datetime.datetime.strftime(date_monday_start, '%Y-%m-%d'), 'date_week'].values[0]
 df_alg_fam_size['okr_type'] = 'envios'
 
-df_alg = df_alg_fam_size.groupby(['date_week']).agg({'okr_value': 'mean',
+df_alg = df_alg_fam_size.groupby(['okr_type']).agg({'okr_value': 'mean',
                                                              'date_monday_start': 'first',
                                                              'n_week': 'first',
-                                                             'okr_type': 'first'}).reset_index()
+                                                    'date_week': 'first'}).reset_index()
 
 df_alg_fam_size.to_csv(os.path.join(backup_folder, 'okr_envios_family_size.csv'), index=False, header=True)
 
@@ -233,6 +234,12 @@ df_devos_raw = df_eval_real[df_eval_real['info_type'] == 'devos']
 
 df_devos = df_devos_raw[df_devos_raw['date_week'].isin(df_shopping_mondays['date_week'].to_list())]
 
+
+df_devos = df_devos_raw.groupby(['date_week', 'family_desc', 'size']).agg({'q_estimates': 'sum',
+                                                                           'q_real': 'sum',
+                                                                           'q_dif': 'sum'}).reset_index()
+
+# df_devos['q_dif1'] = np.abs(df_devos['q_estimates'] - df_devos['q_real'])
 # add date_shopping
 df_devos = pd.merge(df_devos, df_shopping_mondays[['date_week', 'date_shopping']],
                      on=['date_week'],
@@ -273,7 +280,7 @@ df_alg_fam_size = df_alg_fam_size.rename(columns={'q_dif_pct': 'okr_value'})
 df_alg_fam_size['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
 df_alg_fam_size['n_week'] = number_weeks
 df_alg_fam_size['date_week'] = df_shopping_mondays.loc[df_shopping_mondays['date_monday'] == datetime.datetime.strftime(date_monday_start, '%Y-%m-%d'), 'date_week'].values[0]
-df_alg_fam_size['okr_type'] = 'envios'
+df_alg_fam_size['okr_type'] = 'devos'
 
 df_alg = df_alg_fam_size.groupby(['date_week']).agg({'okr_value': 'mean',
                                                              'date_monday_start': 'first',

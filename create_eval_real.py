@@ -113,6 +113,8 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
             df_stock_day = pd.read_csv(stock_file,
                                        usecols=['reference', 'family', 'real_stock', 'active']
                                        ).query(query_stock_text)
+
+            print('Loading stock: ', stock_file)
             df_stock_day['date'] = day
 
             df_stock_all = df_stock_all.append(df_stock_day)
@@ -143,21 +145,21 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
     return df_stock
 
 
-def get_pendientes_real(date_start, pedidos_file, productos_file):
+def get_pendientes_real(date_week, pedidos_file, productos_file):
     # if pedidos_file is None:
     #     pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
     # if productos_file is None:
     #     productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
     df_pedidos = pd.read_csv(pedidos_file, encoding="ISO-8859-1")
-
+    print('Loading pedidos: ' + pedidos_file + ' filtrando por la fecha ' + date_week.strftime('%d%m%Y'))
     df_pedidos['date'] = pd.to_datetime(df_pedidos['date'])
 
 
     df_pedidos['date_week'] = df_pedidos['date'] - pd.TimedeltaIndex(df_pedidos['date'].dt.dayofweek, unit='d')
     df_pedidos['date_week'] = df_pedidos['date_week'].dt.date
 
-    df_pedidos = df_pedidos[df_pedidos['date_week'] == date_start.date()]
+    df_pedidos = df_pedidos[df_pedidos['date_week'] == date_week.date()]
 
     references_list = df_pedidos['reference'].to_list()
     df_productos = get_fam_size_clima(references_list, file=productos_file, drop_duplicates=True,
@@ -605,7 +607,7 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     try:
         print('Getting pendientes real')
 
-        df_real = df_real.append(get_pendientes_real(date_start, pedidos_file, productos_file))
+        df_real = df_real.append(get_pendientes_real(date_week, pedidos_file, productos_file))
     except:
         print('Error in getting pendientes real')
         pass

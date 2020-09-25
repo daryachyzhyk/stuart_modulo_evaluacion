@@ -119,7 +119,8 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
     elif how == 'monday':
         print(date_start)
         # stock_fecha = date_start.strftime('%Y%m%d')
-        stock_fecha = date_end.strftime('%Y%m%d')
+        # snapshot for the next monday after the period that we analize
+        stock_fecha = (date_end + datetime.timedelta(days=1)).strftime('%Y%m%d')
         stock_file = sorted(glob.glob(os.path.join(stock_path, stock_fecha + '*')))[0]
         print(stock_file)
         query_stock_text = 'real_stock > 0 and active > 0'
@@ -375,8 +376,12 @@ def apply_distribution_unq(df, file_distribution):
     return df
 
 
-def merge_eval_estimates_real(date_start_str, file_estimates, file_eval_settings, file_real, file_save):
+def merge_eval_estimates_real(date_week, file_estimates, file_eval_settings, file_real, file_save):
+
+
+    # TODO
     print('Merging output of Stuart and real data')
+    print(date_week)
     # if file_estimates is None:
     #     file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
     #
@@ -388,22 +393,22 @@ def merge_eval_estimates_real(date_start_str, file_estimates, file_eval_settings
 
     df_estimates_raw = pd.read_csv(file_estimates)
     df_settings_raw = pd.read_csv(file_eval_settings)
-    #
-    # df_settings = df_settings_raw.groupby(['date_shopping']).agg({'id_stuart': 'max',
-    #                                                             'date_order_in_stock': 'last',
-    #                                                               'n_weeks_recommendation': 'last'}).reset_index()
-    #
-    #
-    # df_id_dates = pd.DataFrame([])
-    # for index, row in df_settings.iterrows():
-    #     df_id = pd.DataFrame([])
-    #     df_id['date_week'] = pd.date_range(start=pd.to_datetime(row['date_order_in_stock']) + datetime.timedelta(days=7),
-    #                                         end=pd.to_datetime(row['date_order_in_stock']) + datetime.timedelta(days=7) * row['n_weeks_recommendation'], freq='W-MON')
-    #     df_id['id_stuart'] = row['id_stuart']
-    #     df_id_dates = df_id_dates.append(df_id)
-    # df_id_dates['date_week'] = df_id_dates['date_week'].dt.strftime('%Y-%m-%d')
-    # df_estimates_raw = df_estimates_raw.merge(df_id_dates, on=['date_week', 'id_stuart'], how='inner')
-    #
+
+    df_settings = df_settings_raw.groupby(['date_shopping']).agg({'id_stuart': 'max',
+                                                                'date_order_in_stock': 'last',
+                                                                  'n_weeks_recommendation': 'last'}).reset_index()
+
+
+    df_id_dates = pd.DataFrame([])
+    for index, row in df_settings.iterrows():
+        df_id = pd.DataFrame([])
+        df_id['date_week'] = pd.date_range(start=pd.to_datetime(row['date_order_in_stock']) + datetime.timedelta(days=7),
+                                            end=pd.to_datetime(row['date_order_in_stock']) + datetime.timedelta(days=7) * row['n_weeks_recommendation'], freq='W-MON')
+        df_id['id_stuart'] = row['id_stuart']
+        df_id_dates = df_id_dates.append(df_id)
+    df_id_dates['date_week'] = df_id_dates['date_week'].dt.strftime('%Y-%m-%d')
+    df_estimates_raw = df_estimates_raw.merge(df_id_dates, on=['date_week', 'id_stuart'], how='inner')
+
 
 
     # TODO: clean overlapping dates for different recommendations
@@ -414,9 +419,10 @@ def merge_eval_estimates_real(date_start_str, file_estimates, file_eval_settings
 
 
     # stop
-    df_estimates_raw = df_estimates_raw[df_estimates_raw['date_week'] == date_start_str]
+    date_week_str = datetime.datetime.strftime(date_week, '%Y-%m-%d')
+    df_estimates_raw = df_estimates_raw[df_estimates_raw['date_week'] == date_week_str]
 
-    df_estimates_raw = df_estimates_raw[df_estimates_raw['id_stuart'] == df_estimates_raw['id_stuart'].max()]
+    # df_estimates_raw = df_estimates_raw[df_estimates_raw['id_stuart'] == df_estimates_raw['id_stuart'].max()]
 
     print('Print Stuart ID ', df_estimates_raw['id_stuart'].max())
     df_estimates = df_estimates_raw[df_estimates_raw['caracteristica'] == 'size']
@@ -453,6 +459,10 @@ def merge_eval_estimates_real(date_start_str, file_estimates, file_eval_settings
                   on=['date_week', 'family_desc', 'clima', 'size', 'info_type'],
                   how='outer')
     df['q_real'] = df['q_real'].fillna(0)
+
+    # some id_stuart are empy, its related to the case where there is no Stuart recomendation, but we have real data
+    # for particular family-clima-size
+    df['id_stuart'] = df['id_stuart'].fillna(method='ffill')
 
     # TODO: as type integer or np.round
     df['q_estimates'] = df['q_estimates'].fillna(0).astype(int)
@@ -527,7 +537,6 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
 
     if date_start == 'today':
         day_today = datetime.datetime.now()
-
         date_start = day_today - datetime.timedelta(days=7 + day_today.weekday())
     elif isinstance(date_start, datetime.datetime):
         print('datetime correct')
@@ -541,6 +550,8 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
     date_end = date_start + datetime.timedelta(days=6)
 
+    date_week = date_start + datetime.timedelta(days=7)
+    date_week_str = datetime.datetime.strftime(date_week, '%Y-%m-%d')
     date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
     print('Getting real data for ' + date_start_str + ' - ' + date_end_str)
@@ -617,15 +628,15 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     df_real = apply_distribution_unq(df_real, file_distribution_osfa)
 
     # add dates
-    df_real['date_week'] = date_start.date()
+    # df_real['date_week'] = date_start.date()
+    df_real['date_week'] = date_week.date()
 
-
-
+    test = df_real[df_real['size'] == 'UNQ']
 
 
     # save
     name_save = 'eval_real_data.csv.gz'
-    name_save_date = 'eval_real_data_' + date_start_str + '.csv.gz'
+    name_save_date = 'eval_real_data_' + date_week_str + '.csv.gz'
     name_save_merged = 'eval_estimates_real.csv.gz'
 
     # path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
@@ -642,8 +653,10 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     # save appended data
     if not os.path.isfile(os.path.join(path_save, name_save)):
        df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=True)
+       print('Creating new file ' + os.path.join(path_save, name_save))
     else:
        df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
+       print('Appending to already exist file ' + os.path.join(path_save, name_save))
 
 
     # # if file does not exist write header
@@ -653,7 +666,7 @@ def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=
     #    df_real.to_csv(os.path.join(path_save, name_save), mode='a', index=False, header=False)
     file_real = os.path.join(path_save_date, name_save_date)
     file_merged_save = os.path.join(path_save, name_save_merged)
-    df_merged = merge_eval_estimates_real(date_start_str, file_estimates, file_eval_settings, file_real=file_real, file_save=file_merged_save)
+    df_merged = merge_eval_estimates_real(date_week, file_estimates, file_eval_settings, file_real=file_real, file_save=file_merged_save)
 
 
 
@@ -681,20 +694,20 @@ if __name__ == "__main__":
 
 
 
-    # date_start = datetime.datetime(2020, 8, 24)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 8, 31)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 9, 7)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-    #
-    # date_start = datetime.datetime(2020, 9, 14)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-
-    date_start = datetime.datetime(2020, 9, 21)
+    date_start = datetime.datetime(2020, 8, 24)
     run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    date_start = datetime.datetime(2020, 8, 31)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    #
+    date_start = datetime.datetime(2020, 9, 7)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    #
+    date_start = datetime.datetime(2020, 9, 14)
+    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+
+    # date_start = datetime.datetime(2020, 9, 21)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     run_eval_estimates_real(date_start='today', path_save=path_save, path_save_date=path_save_date)
 

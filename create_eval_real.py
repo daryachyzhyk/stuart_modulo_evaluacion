@@ -482,8 +482,8 @@ def merge_eval_estimates_real(date_week, file_estimates, file_eval_settings, fil
     df['q_estimates_alg'] = df['q_estimates'] / df.groupby(['id_stuart', 'date_week', 'info_type'])['q_estimates'].transform('sum')
     df['q_real_rel'] = df['q_real'] / df.groupby(['id_stuart', 'date_week', 'info_type'])['q_real'].transform('sum')
 
-    df.loc[df['info_type'] != 'envios', 'q_estimates_alg'] = 0
-    df.loc[df['info_type'] != 'envios', 'q_real_rel'] = 0
+    df.loc[df['info_type'] != 'envios', 'q_estimates_alg'] = np.nan
+    # df.loc[df['info_type'] != 'envios', 'q_real_rel'] = 0
 
     df['q_dif_alg'] = df['q_estimates_alg'] - df['q_real_rel']
 
@@ -695,18 +695,18 @@ if __name__ == "__main__":
     # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
 
-
-    date_start = datetime.datetime(2020, 8, 24)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
-
-    date_start = datetime.datetime(2020, 8, 31)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
     #
-    date_start = datetime.datetime(2020, 9, 7)
+    # date_start = datetime.datetime(2020, 8, 24)
     # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
     #
-    date_start = datetime.datetime(2020, 9, 14)
-    run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_start = datetime.datetime(2020, 8, 31)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # #
+    # date_start = datetime.datetime(2020, 9, 7)
+    # # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # #
+    # date_start = datetime.datetime(2020, 9, 14)
+    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
 
     # date_start = datetime.datetime(2020, 9, 21)
     # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)

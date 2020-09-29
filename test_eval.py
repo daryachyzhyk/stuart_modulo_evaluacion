@@ -1,4 +1,59 @@
 
+
+import os
+import glob
+import pandas as pd
+import numpy as np
+import datetime
+
+path_save = ('/var/lib/lookiero/stock/stock_tool')
+path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+
+stock_path = ('/var/lib/lookiero/stock/snapshots')
+productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
+venta_file = ('/var/lib/lookiero/stock/stock_tool/demanda.csv.gz')
+pedidos_file = ('/var/lib/lookiero/stock/stock_tool/stuart/pedidos.csv.gz')
+file_distribution_osfa = ('/var/lib/lookiero/stock/stock_tool/stuart/distribucion_osfa.csv.gz')
+file_estimates = ('/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz')
+file_eval_settings = ('/var/lib/lookiero/stock/stock_tool/eval_settings.csv.gz')
+path_save = ('/var/lib/lookiero/stock/stock_tool')
+path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
+
+
+date_run = datetime.datetime(2020, 9, 14)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import os
 import glob
 import pandas as pd

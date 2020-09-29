@@ -28,7 +28,7 @@ number_weeks = 4
 only_similar_shopping = True
 
 #####################################################
-print(date_select)
+print('Date when the calculation is run ', date_select)
 if date_select == 'today':
     day_today = datetime.datetime.now()
     date_start = day_today - datetime.timedelta(days=7 * number_weeks + day_today.weekday())
@@ -201,8 +201,7 @@ df_family_size_dif_binary.to_csv(os.path.join(backup_folder,
 print('Saving OKR shopping to: ' + os.path.join(backup_folder, 'okr_shopping.csv'))
 
 #######################################################################################################################
-# okr 2- envios
-# TODO combine okr envios and devos
+# okr 2- envios  and devos
 
 # for okr_type in ['envios', 'devos']:
 
@@ -241,7 +240,7 @@ list_family_acces = ['BOLSO', 'BUFANDA', 'FULAR']
 df_eval_real = df_eval_real.drop(df_eval_real[(df_eval_real['family_desc'].isin(list_family_acces)) &
                                      (df_eval_real['size'] != 'UNQ')].index)
 
-for okr_type in ['envios', 'devos']:
+for okr_type in ['envios']: # , 'devos'
     print('Calculating OKR of ', okr_type)
     df_okr = df_eval_real[df_eval_real['info_type'] == okr_type]
 
@@ -252,7 +251,8 @@ for okr_type in ['envios', 'devos']:
 
         # df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
         df_okr['q_dif_abs'] = np.abs(df_okr['q_estimates_alg'] - df_okr['q_real_rel'])
-        df_okr['okr_value'] = df_okr['q_dif_abs'] * df_okr['q_real_rel']
+        df_okr['okr_value'] = df_okr['q_dif_abs'] * df_okr['q_real_rel'] / df_okr['q_real_rel'].sum()
+        print('df_okr[q_real_rel].sum()   ', df_okr['q_real_rel'].sum())
 
     elif okr_type == 'devos':
 

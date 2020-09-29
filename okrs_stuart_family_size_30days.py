@@ -100,7 +100,7 @@ df_selected_shopping_week = df_all_shopping_week[df_all_shopping_week['date_week
 #
 # df_shopping_mondays = pd.merge(df_all_mondays, df_date_shopping_week, on=['date_monday'], how='left')
 df_shopping_week_numbers = df_selected_shopping_week['date_shopping'].value_counts().rename_axis(
-    'date_shopping').reset_index(name='n_weeks')
+    'date_shopping').reset_index(name='n_week')
 
 list_shopping_date = list(set(df_shopping_week_numbers['date_shopping'].to_list()))
 
@@ -173,6 +173,7 @@ date_week_last_str = datetime.datetime.strftime(list_selected_date_week[-1], '%Y
 df_okr_shopping = pd.DataFrame({'date_shopping': list_shopping_date,
                                 'dif_recommend_shopping_pct': list_okr_shopping_pct})
 df_okr_shopping['date_week'] = date_week_last_str
+df_okr_shopping['okr_type'] = 'shopping'
 df_okr_shopping['threshold_shopping_difference'] = threshold
 # df_okr_shopping['date_monday_start'] = datetime.datetime.strftime(date_monday_start, '%Y-%m-%d')
 df_okr_shopping = pd.merge(df_okr_shopping, df_shopping_week_numbers, on=['date_shopping'], how='left')
@@ -195,7 +196,7 @@ if not os.path.exists(backup_folder):
 
 df_okr_shopping.to_csv(os.path.join(backup_folder, 'okr_shopping.csv'), index=False, header=True)
 df_family_size_dif_binary.to_csv(os.path.join(backup_folder,
-                                              'recommend_shopping_dif_binary_thr' + str(threshold) + '.csv'),
+                                              'recommend_shopping_dif_binary_thr.csv'),
                                  index=False,
                                  header=True)
 print('Saving OKR shopping to: ' + os.path.join(backup_folder, 'okr_shopping.csv'))
@@ -286,6 +287,30 @@ for okr_type in ['envios']: # , 'devos'
 
 
 
+
+#############################################################################################
+# join all okr
+df_okr_join = pd.DataFrame([])
+for okr_type in ['envios', 'devos', 'roturas', 'shopping']:
+    if okr_type == 'roturas':
+        df_temp = pd.read_csv('/var/lib/lookiero/stock/stock_tool/okr/okr-stuart-roturas.csv.gz')
+        df_temp = df_temp.rename(columns={'valor': 'okr_value',
+                                          'okr': 'okr_type'})
+    else:
+        df_temp = pd.read_csv(os.path.join(backup_folder, 'okr_' + okr_type + '.csv'))
+        if okr_type == 'shopping':
+            df_temp = df_temp.drop(columns=['date_week', 'threshold_shopping_difference'])
+            df_temp = df_temp.rename(columns={'date_shopping': 'date',
+                                              'dif_recommend_shopping_pct': 'okr_value'})
+        else:
+
+            df_temp = df_temp.rename(columns={'date_week': 'date'})
+    df_okr_join = df_okr_join.append(df_temp)
+
+
+df_okr_join.to_csv('/var/lib/lookiero/stock/stock_tool/okr/okr-stuart.csv.gz')
+
+###################################################################################################
 
 # df_envios['q_dif_alg_pct'] = df_envios['q_dif_alg'] / df_envios['q_real_rel'] * 100
 # df_envios.loc[(df_envios['q_estimates_alg'] == 0) & (df_envios['q_real_rel'] == 0), 'q_dif_alg_abs'] = 0

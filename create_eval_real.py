@@ -100,6 +100,8 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
     df_stock_all = pd.DataFrame([])
 
     if how == 'week_mean':
+
+        #  shoud be checked 
         delta_date_stock = date_end - date_start
 
         for i in range(delta_date_stock.days + 1):
@@ -119,12 +121,15 @@ def get_stock_real(date_start, date_end, stock_path, productos_file, how='monday
 
             df_stock_all = df_stock_all.append(df_stock_day)
     elif how == 'monday':
-        print(date_start)
+        # print(date_start)
         # stock_fecha = date_start.strftime('%Y%m%d')
         # snapshot for the next monday after the period that we analize
-        stock_fecha = (date_end + datetime.timedelta(days=1)).strftime('%Y%m%d')
+        # stock_fecha = (date_end + datetime.timedelta(days=1)).strftime('%Y%m%d')
+
+        stock_fecha = (date_start).strftime('%Y%m%d')
+
         stock_file = sorted(glob.glob(os.path.join(stock_path, stock_fecha + '*')))[0]
-        print(stock_file)
+        print('Loading stock snapshot ' + stock_file)
         query_stock_text = 'real_stock > 0 and active > 0'
 
         df_stock_all = pd.read_csv(stock_file,
@@ -557,6 +562,7 @@ def run_eval_estimates_real(date_run='today', stock_path=None, productos_file=No
     date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
     date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
+    # date_week = date_start
 
     # date_week = date_start + datetime.timedelta(days=7)
     # date_week_str = datetime.datetime.strftime(date_week, '%Y-%m-%d')

@@ -381,7 +381,6 @@ def apply_distribution_unq(df, file_distribution):
 def merge_eval_estimates_real(date_week, file_estimates, file_eval_settings, file_real, file_save):
 
 
-    # TODO
     print('Merging output of Stuart and real data')
     print(date_week)
     # if file_estimates is None:
@@ -533,35 +532,37 @@ def merge_eval_estimates_real(date_week, file_estimates, file_eval_settings, fil
 
 
 
-def run_eval_estimates_real(date_start='today', stock_path=None, productos_file=None, pedidos_file=None,
+def run_eval_estimates_real(date_run='today', stock_path=None, productos_file=None, pedidos_file=None,
                             venta_file=None, file_distribution_osfa=None, file_estimates=None, file_eval_settings=None,
                             path_save=None, path_save_date=None):
 
-    if date_start == 'today':
+    if date_run == 'today':
         day_today = datetime.datetime.now()
-        date_start = day_today - datetime.timedelta(days=7 + day_today.weekday())
-    elif isinstance(date_start, datetime.datetime):
+        # date_run = day_today - datetime.timedelta(days=7 + day_today.weekday())
+    elif isinstance(date_run, datetime.datetime):
         print('datetime correct')
-        date_start = date_start - datetime.timedelta(days=7 + date_start.weekday())
+        # date_run = date_run - datetime.timedelta(days=7 + date_run.weekday())
         pass
     else:
         print('Error: date_start should be datetime')
 
 
 
-    date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
+
+
+    date_start = date_run - datetime.timedelta(days=7 + date_run.weekday())
     date_end = date_start + datetime.timedelta(days=6)
 
-    date_week = date_start + datetime.timedelta(days=7)
-    date_week_str = datetime.datetime.strftime(date_week, '%Y-%m-%d')
+    date_run_str = datetime.datetime.strftime(date_run, '%Y-%m-%d')
+    date_start_str = datetime.datetime.strftime(date_start, '%Y-%m-%d')
     date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
-    print('Getting real data for ' + date_start_str + ' - ' + date_end_str)
-    # fecha_stock_actual_start_str = '2020-07-13'
 
+    # date_week = date_start + datetime.timedelta(days=7)
+    # date_week_str = datetime.datetime.strftime(date_week, '%Y-%m-%d')
+    # date_end_str = datetime.datetime.strftime(date_end, '%Y-%m-%d')
 
-
-
+    print('Getting real data for ' + date_start_str + ' - ' + date_end_str + ' computed on ' + date_run_str)
 
     ######################################################################################3
     # path
@@ -682,21 +683,21 @@ if __name__ == "__main__":
 
     # start with last week of july and first week of august
 
-    # date_start = datetime.datetime(2020, 7, 27)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_run = datetime.datetime(2020, 7, 27)
+    # run_eval_estimates_real(date_run=date_run, path_save=path_save, path_save_date=path_save_date)
     #
-    # date_start = datetime.datetime(2020, 8, 3)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_run = datetime.datetime(2020, 8, 3)
+    # run_eval_estimates_real(date_run=date_run, path_save=path_save, path_save_date=path_save_date)
     #
-    # date_start = datetime.datetime(2020, 8, 10)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_run = datetime.datetime(2020, 8, 10)
+    # run_eval_estimates_real(date_run=date_run, path_save=path_save, path_save_date=path_save_date)
     #
-    # date_start = datetime.datetime(2020, 8, 17)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    # date_run = datetime.datetime(2020, 8, 17)
+    # run_eval_estimates_real(date_run=date_run, path_save=path_save, path_save_date=path_save_date)
 
 
     #
-    # date_start = datetime.datetime(2020, 8, 24)
+    date_start = datetime.datetime(2020, 8, 24)
     # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
     #
     # date_start = datetime.datetime(2020, 8, 31)
@@ -705,8 +706,8 @@ if __name__ == "__main__":
     # date_start = datetime.datetime(2020, 9, 7)
     # # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
     # #
-    # date_start = datetime.datetime(2020, 9, 14)
-    # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)
+    date_run = datetime.datetime(2020, 9, 14)
+    run_eval_estimates_real(date_start=date_run, path_save=path_save, path_save_date=path_save_date)
 
     # date_start = datetime.datetime(2020, 9, 21)
     # run_eval_estimates_real(date_start=date_start, path_save=path_save, path_save_date=path_save_date)

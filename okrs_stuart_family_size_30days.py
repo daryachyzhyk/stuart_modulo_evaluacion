@@ -194,12 +194,12 @@ backup_folder = os.path.join(result_folder, date_week_last_str)
 if not os.path.exists(backup_folder):
     os.makedirs(backup_folder)
 
-df_okr_shopping.to_csv(os.path.join(backup_folder, 'okr_shopping.csv'), index=False, header=True)
+df_okr_shopping.to_csv(os.path.join(backup_folder, 'okr_shopping.csv.gz'), index=False, header=True)
 df_family_size_dif_binary.to_csv(os.path.join(backup_folder,
-                                              'recommend_shopping_dif_binary_thr.csv'),
+                                              'recommend_shopping_dif_binary.csv.gz'),
                                  index=False,
                                  header=True)
-print('Saving OKR shopping to: ' + os.path.join(backup_folder, 'okr_shopping.csv'))
+print('Saving OKR shopping to: ' + os.path.join(backup_folder, 'okr_shopping.csv.gz'))
 
 #######################################################################################################################
 # okr 2- envios  and devos
@@ -241,7 +241,7 @@ list_family_acces = ['BOLSO', 'BUFANDA', 'FULAR']
 df_eval_real = df_eval_real.drop(df_eval_real[(df_eval_real['family_desc'].isin(list_family_acces)) &
                                      (df_eval_real['size'] != 'UNQ')].index)
 
-for okr_type in ['envios']: # , 'devos'
+for okr_type in ['envios', 'devos']: # , 'devos'
     print('Calculating OKR of ', okr_type)
     df_okr = df_eval_real[df_eval_real['info_type'] == okr_type]
 
@@ -276,8 +276,8 @@ for okr_type in ['envios']: # , 'devos'
                                                     'okr_value': 'mean',
                                                     'n_week': 'first'
                                                     }).reset_index()
-    file_name_okr_family_size = os.path.join(backup_folder, 'okr_' + okr_type + '_family_size.csv')
-    file_name_okr_mean = os.path.join(backup_folder, 'okr_' + okr_type + '.csv')
+    file_name_okr_family_size = os.path.join(backup_folder, 'okr_' + okr_type + '_family_size.csv.gz')
+    file_name_okr_mean = os.path.join(backup_folder, 'okr_' + okr_type + '.csv.gz')
     df_okr.to_csv(file_name_okr_family_size, index=False, header=True)
 
     df_okr_mean.to_csv(file_name_okr_mean, index=False, header=True)
@@ -290,6 +290,7 @@ for okr_type in ['envios']: # , 'devos'
 
 #############################################################################################
 # join all okr
+
 df_okr_join = pd.DataFrame([])
 for okr_type in ['envios', 'devos', 'roturas', 'shopping']:
     if okr_type == 'roturas':
@@ -297,7 +298,7 @@ for okr_type in ['envios', 'devos', 'roturas', 'shopping']:
         df_temp = df_temp.rename(columns={'valor': 'okr_value',
                                           'okr': 'okr_type'})
     else:
-        df_temp = pd.read_csv(os.path.join(backup_folder, 'okr_' + okr_type + '.csv'))
+        df_temp = pd.read_csv(os.path.join(backup_folder, 'okr_' + okr_type + '.csv.gz'))
         if okr_type == 'shopping':
             df_temp = df_temp.drop(columns=['date_week', 'threshold_shopping_difference'])
             df_temp = df_temp.rename(columns={'date_shopping': 'date',
@@ -307,8 +308,11 @@ for okr_type in ['envios', 'devos', 'roturas', 'shopping']:
             df_temp = df_temp.rename(columns={'date_week': 'date'})
     df_okr_join = df_okr_join.append(df_temp)
 
+path_save_okr = ('/var/lib/lookiero/stock/stock_tool/okr/okr-stuart.csv.gz')
+df_okr_join.to_csv(path_save_okr)
+print('Join all type of okrs and save them to ', path_save_okr)
 
-df_okr_join.to_csv('/var/lib/lookiero/stock/stock_tool/okr/okr-stuart.csv.gz')
+
 
 ###################################################################################################
 

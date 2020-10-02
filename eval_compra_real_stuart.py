@@ -147,8 +147,6 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
     df_compra_stuart = df_compra_stuart[df_compra_stuart['date_shopping'].isin(intersection_date_shopping)]
     df_compra_real = df_compra_real[df_compra_real['date_shopping'].isin(intersection_date_shopping)]
 
-
-    # TODO: check with different date_shopping
     df = pd.merge(df_compra_stuart,
                   df_compra_real,
                   on=['date_shopping', 'family_desc', 'clima', 'size'],
@@ -156,7 +154,6 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
 
     df['q_estimate'] = df['q_estimate'].fillna(0)
     df['q_real'] = df['q_real'].fillna(0)
-
     df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
 
     size_dic = {'XXS': '0-XXS',
@@ -168,38 +165,23 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
                 'XXL': '6-XXL',
                 'XXXL': '7-XXXL',
                 'X4XL': '8-X4XL'}
+
     df['size_desc'] = df['size'].replace(size_dic)
 
-    # if file_save is not None:
-    #
-    #     if not os.path.isfile(file_save):
-    #         print('Creating a new file ' + file_save)
-    #         df.to_csv(file_save, mode='a', index=False, header=True)
-    #     else:
-    #         print('Appending to existing file ' + file_save)
-    #         df.to_csv(file_save, mode='a', index=False, header=False)
     if file_save is not None:
         path_save = ('/var/lib/lookiero/stock/stock_tool')
         file_save = os.path.join(path_save, 'eval_estimates_real_compra.csv.gz')
+
     print('Creating a new file ' + file_save)
     df.to_csv(file_save, index=False, header=True)
 
     return df
 
-
-# run
-# date_compra_str = '2020-08-03'
-# date_stuart_str = '2020-08-03'
-
-# path = ('/var/lib/lookiero/stock/stock_tool')
+##################################################################################################
+# psth
 eval_settings = '/var/lib/lookiero/stock/stock_tool/eval_settings.csv.gz'
 eval_estimates = '/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz'
-
 compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1.csv')
-compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1-20200901.csv')
-
-
-
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
 path_save = ('/var/lib/lookiero/stock/stock_tool')
@@ -207,17 +189,14 @@ path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 
 file_save = os.path.join(path_save, 'eval_estimates_real_compra.csv.gz')
 
-# file_save_date = os.path.join(path_save_date, 'eval_estimates_real_compra_' + date_compra_str + '.csv.gz')
-
-# TODO: correct  stuart date
-# compra_date_stuart_id_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
+##################################################################################################
+# run
 
 df_compra_real = get_compra_real(compra_file, productos_file)
 
 df_compra_stuart = get_stuart_recommendation(eval_settings, eval_estimates)
 
 df = merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save)
-
 
 print('Total difference: ',  df['q_dif'].abs().sum())
 
@@ -229,191 +208,3 @@ df[df['date_shopping'] == '2020-08-03']['q_dif'].abs().sum()
 df[df['date_shopping'] == '2020-08-31']['q_dif'].sum()
 df[df['date_shopping'] == '2020-08-31']['q_dif'].abs().sum()
 
-
-
-# aa = df_compra_stuart[df_compra_stuart['clima'].isin(['sin_clase','no_definido'])]
-
-
-#
-# def get_compra_real(date_compra_str, compra_file, compra_dates_file, productos_file):
-#     # TODO: download compra file from Google Drive
-#
-#     # compra realizada
-#     # compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
-#
-#     # link between week and compra date
-#     # compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
-#
-#     query_compra_date_text = 'week == @date_compra_str'
-#     df_date_compra = pd.read_csv(compra_dates_file).query(query_compra_date_text)
-#     if df_date_compra.empty == False:
-#         date_compra_str = df_date_compra['date_compra'].values[0]
-#
-#         query_compra_reference_text = 'date_compra == @date_compra_str'
-#         df_compra_raw = pd.read_csv(compra_file,
-#                                     usecols=['date_compra', 'reference', 'cantidad_pedida']
-#                                     ).query(query_compra_reference_text)
-#
-#         list_references_compra = df_compra_raw["reference"].to_list()
-#         df_compra_products = get_fam_size_clima(list_references_compra, productos_file, drop_duplicates=True)
-#
-#         df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
-#         df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
-#
-#         df_compra['info_type'] = 'pedido'
-#         df_compra = df_compra.rename(columns={'cantidad_pedida': 'q'})
-#
-#     else:
-#         print('There is no date ' + date_compra_str + '. Please update the data here: ' + compra_dates_file)
-#
-#     return df_compra
-
-
-
-#
-# # run
-#
-# # compra realizada
-# compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
-#
-# # link between week and compra date
-# compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
-# compra_date_stuart_id = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra-date-stuart-id - Sheet1.csv')
-# productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
-#
-#
-# date_compra_str = '2020-07-22'
-# get_compra_real(date_compra_str, compra_file, compra_dates_file, productos_file)
-#
-#
-# # date_compra	id_stuart	date_stuart
-
-
-################### version with date_compra
-#
-# def get_compra_real(date_compra_str, compra_file, productos_file):
-#     # TODO: download compra file from Google Drive
-#
-#     # compra realizada
-#     # compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_referemce_quantity - Sheet1.csv')
-#
-#     # link between week and compra date
-#     # compra_dates_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_fechas - Sheet1.csv')
-#
-#     # query_compra_date_text = 'week == @date_compra_str'
-#     # df_date_compra = pd.read_csv(compra_dates_file).query(query_compra_date_text)
-#     # if df_date_compra.empty == False:
-#     #     date_compra_str = df_date_compra['date_compra'].values[0]
-#
-#     query_compra_reference_text = 'date_compra == @date_compra_str'
-#     df_compra_raw = pd.read_csv(compra_file,
-#                                 usecols=['date_compra', 'reference', 'cantidad_pedida']
-#                                 ).query(query_compra_reference_text)
-#
-#     list_references_compra = df_compra_raw["reference"].to_list()
-#     df_compra_products = get_fam_size_clima(list_references_compra, productos_file, drop_duplicates=True)
-#
-#     df_compra_reference = pd.merge(df_compra_raw, df_compra_products, on='reference', how='left')
-#     df_compra = df_compra_reference.groupby(['family_desc', 'clima', 'size']).agg({'cantidad_pedida': 'sum'}).reset_index()
-#
-#     # df_compra['info_type'] = 'pedido'
-#     df_compra = df_compra.rename(columns={'cantidad_pedida': 'q_real'})
-#
-#     # else:
-#     #     print('There is no date ' + date_compra_str + '. Please update the data here: ' + compra_dates_file)
-#
-#     return df_compra
-#
-#
-# def get_stuart_recommendation(date_compra_str, eval_settings, eval_estimates):
-#
-#     df_settings = pd.read_csv(eval_settings)
-#
-#
-#
-#
-#     id_stuart = df_settings[df_settings['date_shopping']==date_compra_str]['id_stuart'].values.max()
-#     print('ID de Dtuart = ', id_stuart)
-#     df_raw = pd.read_csv(eval_estimates)
-#     df_stuart = df_raw[df_raw['id_stuart'] ==id_stuart]
-#
-#     df_stuart = df_stuart[df_stuart['info_type'] == 'pedido']
-#
-#     df_stuart = df_stuart.rename(columns={'clase': 'size', 'q': 'q_estimate'})
-#     df_stuart = df_stuart[['family_desc', 'clima', 'size', 'info_type', 'q_estimate']]
-#
-#     df_stuart_merged = df_stuart.groupby(['family_desc', 'clima', 'size', 'info_type']).agg({'q_estimate': 'sum'}).reset_index()
-#     #
-#     # df_date_id = pd.read_csv(compra_date_stuart_id_file)
-#     # date_stuart_str = df_date_id[df_date_id['date_compra']==date_compra_str]['date_stuart'].values[0]
-#     # date_stuart_datetime = datetime.datetime.strptime(date_stuart_str, '%Y-%m-%d')
-#     # path_stuart = ('/var/lib/lookiero/stock/stock_tool/stuart')
-#     # stuart_folder = date_stuart_datetime.strftime('%Y%m%d')
-#     # stuart_file = os.path.join(path_stuart, stuart_folder, 'stuart_output_todos.csv.gz')
-#     #
-#     # df_raw = pd.read_csv(stuart_file)
-#     # df_raw[['family_desc', 'clima']] = df_raw['family_desc-clima'].str.split("-", expand=True)
-#     # df_raw[['temp', 'size']] = df_raw['clase'].str.split("-", expand=True)
-#     # df_raw = df_raw.rename(columns={'clase': 'size_desc'})
-#     # df_stuart = df_raw[['family_desc', 'clima', 'size', 'recomendacion', 'size_desc']]
-#     return df_stuart_merged
-#
-#
-# def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None, file_save_date=None):
-#
-#     # drop 'sin_clase'
-#     df_compra_stuart = df_compra_stuart[df_compra_stuart['clima'] != 'sin_clase']
-#     df_compra_stuart = df_compra_stuart[df_compra_stuart['size'] != 'sin_clase']
-#
-#
-#
-#     # remove clima not in the list such as 1.66
-#     list_clima = [0., 0.5, 1., 1.5, 2., 2.5, 3.]
-#     df_compra_stuart = df_compra_stuart[~df_compra_stuart['clima'].isin(list_clima)]
-#
-#
-#     dic_clima = {'0.0': '0',
-#                  '1.0': '1',
-#                  '2.0': '2',
-#                  '3.0': '3'}
-#
-#     df_compra_real['clima'] = df_compra_real['clima'].astype('str').replace(dic_clima)
-#
-#     df = pd.merge(df_compra_stuart,
-#                   df_compra_real,
-#                   on=['family_desc', 'clima', 'size'],
-#                   how='outer')
-#     df['q_estimate'] = df['q_estimate'].fillna(0)
-#     df['q_real'] = df['q_real'].fillna(0)
-#
-#     df['date_shopping'] = date_compra_str
-#
-#     df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
-#
-#     size_dic = {'XXS': '0-XXS',
-#                 'XS': '1-XS',
-#                 'S': '2-S',
-#                 'M': '3-M',
-#                 'L': '4-L',
-#                 'XL': '5-XL',
-#                 'XXL': '6-XXL',
-#                 'XXXL': '7-XXXL',
-#                 'X4XL': '8-X4XL'}
-#     df['size_desc'] = df['size'].replace(size_dic)
-#
-#     if file_save is not None:
-#
-#         if not os.path.isfile(file_save):
-#             print('Creating a new file ' + file_save)
-#             df.to_csv(file_save, mode='a', index=False, header=True)
-#         else:
-#             print('Appending to existing file ' + file_save)
-#             df.to_csv(file_save, mode='a', index=False, header=False)
-#
-#     if file_save_date is not None:
-#         df.to_csv(file_save_date, index=False, header=True)
-#
-#
-#
-#     return df
-#

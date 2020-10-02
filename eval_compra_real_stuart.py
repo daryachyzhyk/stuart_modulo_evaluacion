@@ -198,13 +198,16 @@ df_compra_stuart = get_stuart_recommendation(eval_settings, eval_estimates)
 
 df = merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save)
 
-print('Total difference: ',  df['q_dif'].abs().sum())
+#################################################################################################
+# extra prints, could be deleted
+list_shopping_dates = set(df['date_shopping'].to_list())
+for date_s in list_shopping_dates:
+    print('------------------------------------------------')
+    print('Shopping date - ', date_s)
+
+    df_id = df[df['date_shopping'] == date_s]
+    print('Difference is ', df_id['q_dif'].sum())
+    print('Absolute difference is ', df_id['q_dif'].abs().sum())
 
 
-
-df[df['date_shopping'] == '2020-08-03']['q_dif'].sum()
-df[df['date_shopping'] == '2020-08-03']['q_dif'].abs().sum()
-
-df[df['date_shopping'] == '2020-08-31']['q_dif'].sum()
-df[df['date_shopping'] == '2020-08-31']['q_dif'].abs().sum()
 

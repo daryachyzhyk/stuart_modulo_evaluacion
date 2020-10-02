@@ -116,17 +116,23 @@ def get_stuart_recommendation(eval_settings, eval_estimates):
 
 
 def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
+    """
+    Merge real data and Stuar
+
+    :param df_compra_real: pandas.DataFrame
+    :param df_compra_stuart: pandas.DataFrame
+    :param file_save: str
+        path to csv file
+    :return: pandas.DataFrame
+    """
 
     # drop 'sin_clase'
     df_compra_stuart = df_compra_stuart[df_compra_stuart['clima'] != 'sin_clase']
     df_compra_stuart = df_compra_stuart[df_compra_stuart['size'] != 'sin_clase']
 
-
-
     # remove clima not in the list such as 1.66
     list_clima = [0., 0.5, 1., 1.5, 2., 2.5, 3.]
     df_compra_stuart = df_compra_stuart[~df_compra_stuart['clima'].isin(list_clima)]
-
 
     dic_clima = {'0.0': '0',
                  '1.0': '1',
@@ -134,17 +140,22 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
                  '3.0': '3'}
 
     df_compra_real['clima'] = df_compra_real['clima'].astype('str').replace(dic_clima)
+
+    # keep just shopping date that apperar in both
+    intersection_date_shopping = list(set(df_compra_stuart['date_shopping'].to_list())
+                                      & set(df_compra_real['date_shopping'].to_list()))
+    df_compra_stuart = df_compra_stuart[df_compra_stuart['date_shopping'].isin(intersection_date_shopping)]
+    df_compra_real = df_compra_real[df_compra_real['date_shopping'].isin(intersection_date_shopping)]
+
+
     # TODO: check with different date_shopping
     df = pd.merge(df_compra_stuart,
                   df_compra_real,
                   on=['date_shopping', 'family_desc', 'clima', 'size'],
                   how='outer')
 
-
     df['q_estimate'] = df['q_estimate'].fillna(0)
     df['q_real'] = df['q_real'].fillna(0)
-
-    # df['date_shopping'] = date_compra_str
 
     df['q_dif'] = np.round(df['q_estimate'] - df['q_real'], 0)
 
@@ -167,13 +178,11 @@ def merge_compra_real_stuart(df_compra_real, df_compra_stuart, file_save=None):
     #     else:
     #         print('Appending to existing file ' + file_save)
     #         df.to_csv(file_save, mode='a', index=False, header=False)
-
+    if file_save is not None:
+        path_save = ('/var/lib/lookiero/stock/stock_tool')
+        file_save = os.path.join(path_save, 'eval_estimates_real_compra.csv.gz')
     print('Creating a new file ' + file_save)
     df.to_csv(file_save, index=False, header=True)
-    # if file_save_date is not None:
-    #     df.to_csv(file_save_date, index=False, header=True)
-
-
 
     return df
 
@@ -187,6 +196,10 @@ eval_settings = '/var/lib/lookiero/stock/stock_tool/eval_settings.csv.gz'
 eval_estimates = '/var/lib/lookiero/stock/stock_tool/eval_estimates.csv.gz'
 
 compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1.csv')
+compra_file = ('/var/lib/lookiero/stock/stock_tool/kpi/compra/compra_reference_quantity - Sheet1-20200901.csv')
+
+
+
 productos_file = ('/var/lib/lookiero/stock/stock_tool/productos_preprocessed.csv.gz')
 
 path_save = ('/var/lib/lookiero/stock/stock_tool')

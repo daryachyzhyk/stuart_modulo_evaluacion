@@ -12,6 +12,7 @@ The format of output table (columns): 'date_week', 'family_desc', 'clima', 'size
 
 Data extraction as pandas DataFrame is appended to the historic data at the stock server
 
+@author: dchyzhyk
 """
 
 import os

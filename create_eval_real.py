@@ -513,7 +513,7 @@ if __name__ == "__main__":
     path_save_date = ('/var/lib/lookiero/stock/stock_tool/kpi/eval_real_history')
 
     date_to_run = 'today'                           # usual case, we run it every Monday
-    # date_to_run = 'all_days'                      # uncomment when run all the history from beginning
+    date_to_run = 'all_days'                      # uncomment when run all the history from beginning
     # date_to_run = datetime.datetime(2020, 8, 24)  # uncomment if want run for some specific date
 
     if date_to_run == 'today':

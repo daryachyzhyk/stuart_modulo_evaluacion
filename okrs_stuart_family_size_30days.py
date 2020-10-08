@@ -253,6 +253,7 @@ for okr_type in ['envios', 'devos']: # , 'devos'
         # df_envios['q_dif_alg_abs'] = np.abs(df_envios['q_dif_alg'])
         df_okr['q_dif_abs'] = np.abs(df_okr['q_estimates_alg'] - df_okr['q_real_rel'])
         df_okr['okr_value'] = df_okr['q_dif_abs'] * df_okr['q_real_rel'] / df_okr['q_real_rel'].sum()
+
         print('df_okr[q_real_rel].sum()   ', df_okr['q_real_rel'].sum())
 
     elif okr_type == 'devos':
@@ -267,7 +268,7 @@ for okr_type in ['envios', 'devos']: # , 'devos'
         df_okr.loc[(df_okr['q_estimates'] == 0) & (df_okr['q_real'] != 0), 'okr_value'] = 1
         df_okr.loc[(df_okr['q_estimates'] != 0) & (df_okr['q_real'] == 0), 'okr_value'] = 1
 
-        df_okr['okr_value'] = df_okr['okr_value'] * df_okr['q_real_rel']
+        df_okr['okr_value'] = df_okr['okr_value'] * df_okr['q_real_rel'] / df_okr['q_real_rel'].sum() ###########
     df_okr['okr_type'] = okr_type
     df_okr['date_week'] = date_week_last_str
     df_okr['n_week'] = number_weeks

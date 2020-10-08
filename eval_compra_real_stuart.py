@@ -211,3 +211,12 @@ for date_s in list_shopping_dates:
 
 
 
+# Creating a new file /var/lib/lookiero/stock/stock_tool/eval_estimates_real_compra.csv.gz
+# ------------------------------------------------
+# Shopping date -  2020-08-31
+# Difference is  -26374.0
+# Absolute difference is  86844.0
+# ------------------------------------------------
+# Shopping date -  2020-08-03
+# Difference is  -14463.0
+# Absolute difference is  38275.0
